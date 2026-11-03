@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crazy Bowl-in</title>
+<meta name="theme-color" content="#eaf5fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1624" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bowl-in">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; font: 14px system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<style>
+/* Layout: mobile sports-log app. Sticky app bar, three tab pages (My balls / Ball motion / Drilling), fixed bottom tab bar.
+   Condensed numerals carry the stats; one cobalt accent marks the selected ball and active controls. */
+:root {
+  --bg: #eaf5fc; --surface: #ffffff; --surface2: #f3f9fd;
+  --ink: #13294a; --ink2: #44597a; --muted: #687b95; --line: #d5e5f1; --grid: #e4eef6;
+  --accent: #2f6fbe; --on-accent: #ffffff; --wash: rgba(47, 111, 190, 0.09);
+  --brand: #e48a2a; --on-brand: #ffffff; --brand-wash: rgba(228, 138, 42, 0.12);
+  --good: #14804a; --warn: #a15c00; --bad: #c8202f;
+  --z0: #e1edf6; --z1: #cddeeb; --z2: #b7ccdd;
+  --lane: #efdcb9; --laneLine: #a77d48; --gutter: #cfdbe6; --oil: rgba(70, 130, 215, 0.20);
+  --pin: #ffffff; --pinEdge: #8a9cb2; --path0: #8ea2ba;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1624; --surface: #132137; --surface2: #18283f;
+    --ink: #eaf2fb; --ink2: #b3c4da; --muted: #8799b1; --line: #24364f; --grid: #1c2c42;
+    --accent: #6aa5f0; --on-accent: #0c1624; --wash: rgba(106, 165, 240, 0.14);
+    --brand: #f2a85a; --on-brand: #1a1206; --brand-wash: rgba(242, 168, 90, 0.14);
+    --good: #3fbf7f; --warn: #e0a040; --bad: #ef6b63;
+    --z0: #1c2b40; --z1: #27394f; --z2: #344962;
+    --lane: #4a3926; --laneLine: #1f170d; --gutter: #22324a; --oil: rgba(90, 150, 230, 0.20);
+    --pin: #e9eef3; --pinEdge: #6b7c93; --path0: #7d90a8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1624; --surface: #132137; --surface2: #18283f;
+  --ink: #eaf2fb; --ink2: #b3c4da; --muted: #8799b1; --line: #24364f; --grid: #1c2c42;
+  --accent: #6aa5f0; --on-accent: #0c1624; --wash: rgba(106, 165, 240, 0.14);
+  --brand: #f2a85a; --on-brand: #1a1206; --brand-wash: rgba(242, 168, 90, 0.14);
+  --good: #3fbf7f; --warn: #e0a040; --bad: #ef6b63;
+  --z0: #1c2b40; --z1: #27394f; --z2: #344962;
+  --lane: #4a3926; --laneLine: #1f170d; --gutter: #22324a; --oil: rgba(90, 150, 230, 0.20);
+  --pin: #e9eef3; --pinEdge: #6b7c93; --path0: #7d90a8;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.55; word-break: keep-all; overflow-wrap: break-word;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 calc(84px + env(safe-area-inset-bottom, 0px));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 720px; margin-inline: auto; }
+
+/* app bar */
+.appbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9; background: var(--bg); display: flex; align-items: center; gap: 10px; padding-block: 14px 10px; }
+.logo { width: 34px; height: 34px; flex: none; border-radius: 50%; box-shadow: 0 0 0 2px var(--brand); object-fit: cover; }
+.appbar h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.appbar .tag { margin-left: auto; font-family: var(--font-num); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); }
+
+/* bottom tab bar */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(16px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.tabbar .in { max-width: 720px; margin-inline: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
+.tabbar a { position: relative; display: grid; justify-items: center; align-content: center; gap: 1px; min-height: 54px; border-radius: 10px; text-decoration: none; color: var(--muted); font-size: 13px; font-weight: 500; }
+.tabbar a b { font-family: var(--font-num); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; }
+.tabbar a[aria-current="page"] { color: var(--accent); }
+.tabbar a[aria-current="page"]::before { content: ""; position: absolute; top: -7px; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+.tabbar a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* page + type */
+.page { display: flex; flex-direction: column; gap: 14px; }
+.page > * { min-width: 0; }
+.ph { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.ph h2 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; }
+.sec { font-family: var(--font-num); font-size: 12.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; min-width: 0; }
+.card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.card-h h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.fn { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+.notice { font-size: 13px; color: var(--ink2); background: var(--surface2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0; }
+.notice b { color: var(--ink); font-weight: 500; }
+.count { font-family: var(--font-num); font-size: 15px; font-weight: 600; color: var(--muted); }
+.count b { font-size: 26px; color: var(--ink); margin-right: 2px; }
+
+/* buttons + controls */
+.btn { font: inherit; font-size: 14px; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 10px 16px; min-height: 46px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn.pri { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--bad); }
+.btn.block { width: 100%; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink2); border-radius: 999px; padding: 6px 13px; min-height: 38px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label, .flabel { font-size: 13px; font-weight: 500; color: var(--ink2); }
+.txt, select { font: inherit; font-size: 16px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; width: 100%; min-height: 46px; }
+.btn:focus-visible, .seg button:focus-visible, .txt:focus-visible, select:focus-visible, .sb:focus-visible, .sv:focus-visible, .lnk:focus-visible, .row-main:focus-visible, .row-edit:focus-visible, input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* stepper */
+.stps { display: grid; gap: 14px; }
+@media (min-width: 620px) { .stps.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stps.two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stp { display: grid; gap: 6px; min-width: 0; }
+.stp-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.stp-k { font-weight: 700; font-size: 14px; }
+.stp-s { font-size: 12px; color: var(--muted); }
+.stp-row { display: grid; grid-template-columns: 46px minmax(0, 1fr) 46px; gap: 6px; }
+.sb { font: inherit; font-size: 22px; line-height: 1; border: 1px solid var(--line); background: var(--surface2); color: var(--ink); border-radius: 12px; min-height: 46px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.sb:active { background: var(--wash); }
+.sv { font-family: var(--font-num); font-weight: 600; font-size: 24px; text-align: center; font-variant-numeric: tabular-nums; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; width: 100%; padding: 4px; }
+.stp-meta { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 12px; color: var(--muted); align-items: center; min-height: 30px; }
+.dl { color: var(--ink2); font-variant-numeric: tabular-nums; }
+.dl.warn { color: var(--bad); }
+.lnk { font: inherit; font-size: 12px; background: none; border: 0; color: var(--accent); padding: 4px 0; cursor: pointer; margin-left: auto; min-height: 30px; }
+
+/* range */
+.rng { display: grid; gap: 4px; }
+.rng-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rng-top span { font-size: 13px; font-weight: 500; color: var(--ink2); }
+.rng-top output { font-family: var(--font-num); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+.rng-top output small { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 30px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--accent) 0 var(--fill), var(--z1) var(--fill) 100%); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--accent) 0 var(--fill), var(--z1) var(--fill) 100%); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); margin-top: -9px; }
+input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); }
+.rng-ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+/* map */
+.map svg { display: block; width: 100%; max-width: 540px; height: auto; margin-inline: auto; overflow: visible; }
+svg text { font-family: var(--font-body); }
+svg .num { font-family: var(--font-num); font-weight: 600; }
+.quads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.qd { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink2); }
+.qd b { font-family: var(--font-num); font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1; }
+.qd.top { border-color: var(--accent); background: var(--wash); }
+.qsum { margin: 10px 0 0; font-size: 14px; }
+.qsum b { font-weight: 700; }
+
+/* ball list */
+.list { list-style: none; margin: 0; padding: 0; display: grid; }
+.list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; border-top: 1px solid var(--line); }
+.list li:first-child { border-top: 0; }
+.row-main { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 4px; background: none; border: 0; color: var(--ink); font: inherit; text-align: left; cursor: pointer; min-height: 60px; border-radius: 10px; }
+.row-main:hover { background: var(--surface2); }
+.nb { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--surface); font-family: var(--font-num); font-weight: 700; font-size: 15px; }
+.nb.sel { background: var(--accent); color: var(--on-accent); }
+.rn { font-weight: 700; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs { display: block; font-size: 12px; color: var(--muted); }
+.rs .v { font-family: var(--font-num); font-weight: 600; font-size: 13.5px; color: var(--ink2); letter-spacing: 0.02em; }
+.rt { font-size: 12px; color: var(--ink2); text-align: right; white-space: nowrap; }
+.rt::after { content: "›"; margin-left: 8px; font-size: 18px; color: var(--muted); vertical-align: -1px; }
+.row-edit { font: inherit; font-size: 12px; color: var(--ink2); background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-height: 36px; cursor: pointer; }
+.empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 8px; margin: 0; }
+
+/* editor */
+.editor { display: grid; gap: 16px; border-color: var(--accent); }
+.feel-l { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+/* motion */
+.picker { display: grid; gap: 6px; }
+.hero h3 { margin: 4px 0 2px; font-size: 24px; line-height: 1.2; letter-spacing: -0.02em; text-wrap: balance; }
+.hero p { margin: 0; font-size: 13px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+@media (min-width: 620px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.stat { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface2); min-width: 0; display: grid; gap: 2px; }
+.stat > span { font-size: 12px; color: var(--muted); }
+.stat > b { font-family: var(--font-num); font-weight: 700; font-size: 30px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.stat > b small { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; justify-self: start; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+.lanewrap { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .lanewrap { grid-template-columns: 250px minmax(0, 1fr); align-items: start; } }
+.lanefig svg { display: block; width: 100%; max-width: 250px; height: auto; margin-inline: auto; }
+.ctrls { display: grid; gap: 14px; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink2); justify-content: center; margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 18px; height: 3px; border-radius: 2px; }
+.advice { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 14px; color: var(--ink2); }
+.advice li { padding-left: 14px; position: relative; }
+.advice li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.advice b { color: var(--ink); font-weight: 500; }
+
+/* drill compare */
+.lstr { font-family: var(--font-num); font-weight: 700; font-size: 34px; letter-spacing: 0.02em; line-height: 1.1; margin: 4px 0 0; }
+.lstr small { display: block; font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.cmp { display: grid; gap: 4px; padding-block: 10px; }
+.cmp + .cmp { border-top: 1px solid var(--line); }
+.cmp-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.cmp-h b { font-size: 14px; }
+.cmp-h span { font-size: 13px; color: var(--ink2); }
+.cmp-h span strong { font-family: var(--font-num); font-size: 17px; color: var(--ink); }
+.db { position: relative; height: 20px; margin-inline: 9px; }
+.db .tr { position: absolute; left: 0; right: 0; top: 9px; height: 2px; background: var(--z1); border-radius: 1px; }
+.db .ln { position: absolute; top: 8px; height: 4px; background: var(--accent); opacity: 0.35; border-radius: 2px; }
+.db .d0, .db .d1 { position: absolute; top: 3px; width: 14px; height: 14px; border-radius: 50%; transform: translateX(-50%); box-shadow: 0 0 0 2px var(--surface); }
+.db .d0 { background: var(--path0); }
+.db .d1 { background: var(--accent); }
+.db-l { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+
+/* scores calendar */
+.calgrid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; }
+@media (max-width: 340px) { .calgrid { grid-template-columns: minmax(0, 1fr); } }
+.calgrid .card { padding: 12px 10px; }
+.calnav { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.calnav + .calnav { margin-top: 4px; }
+.calnav button { width: 34px; height: 34px; border: 0; background: var(--surface2); border-radius: 9px; font-size: 18px; line-height: 1; color: var(--ink); cursor: pointer; }
+.calnav b { font-family: var(--font-num); font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.calnav.y b { font-size: 15px; color: var(--ink2); }
+.calnav.y button { width: 28px; height: 28px; font-size: 15px; }
+.dow, .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; }
+.dow { margin-top: 8px; }
+.dow span { font-size: 10.5px; color: var(--muted); padding-block: 2px; }
+.dow span:first-child { color: var(--bad); }
+.dow span:last-child { color: var(--accent); }
+.day { position: relative; aspect-ratio: 1; max-width: 100%; border: 0; background: none; border-radius: 50%; font-family: var(--font-num); font-weight: 600; font-size: 14px; color: var(--ink); cursor: pointer; padding: 0; font-variant-numeric: tabular-nums; }
+.day.out { visibility: hidden; }
+.day.has::after { content: ""; position: absolute; bottom: 2px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); }
+.day.today { box-shadow: inset 0 0 0 1.5px var(--ink2); }
+.day.sel { background: var(--accent); color: var(--on-accent); }
+.day.sel.has::after { background: var(--on-accent); }
+.day:focus-visible, .calnav button:focus-visible, .gdel:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.todaybtn { display: block; margin: 6px auto 0; min-height: 28px; }
+.avgc { display: grid; gap: 10px; align-content: start; }
+.seg.sm { flex-wrap: nowrap; gap: 3px; }
+.seg.sm button { flex: 1; min-width: 0; padding: 4px 0; min-height: 32px; font-size: 12.5px; }
+.avgnum { font-family: var(--font-num); font-size: clamp(28px, 9vw, 44px); white-space: nowrap; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.avgnum small { font-size: 18px; color: var(--muted); }
+.avgsub { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.avgsub b { font-family: var(--font-num); font-size: 16px; color: var(--ink); font-weight: 700; }
+.glist { list-style: none; margin: 0; padding: 0; }
+.glist li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.glist li:first-child { border-top: 0; }
+.gno { font-family: var(--font-num); font-weight: 600; font-size: 14px; color: var(--muted); width: 26px; }
+.gsc { font-family: var(--font-num); font-weight: 700; font-size: 30px; line-height: 1; min-width: 56px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gball { flex: 1; min-width: 0; font-size: 13px; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gdel { font: inherit; font-size: 12px; color: var(--ink2); background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-height: 36px; cursor: pointer; }
+.gdel.armed { color: var(--bad); border-color: var(--bad); }
+.gadd { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); gap: 8px; margin-top: 14px; }
+.gadd .btn { grid-column: 1 / -1; }
+.gscore { font-family: var(--font-num) !important; font-weight: 700; font-size: 24px !important; text-align: center; font-variant-numeric: tabular-nums; }
+.gsum { font-family: var(--font-num); font-size: 15px; font-weight: 600; color: var(--muted); }
+.gsum b { color: var(--ink); font-size: 18px; }
+
+/* splash */
+#splash { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: grid; place-items: center; transition: opacity 0.35s ease; }
+#splash.out { opacity: 0; pointer-events: none; }
+.sp { display: grid; justify-items: center; gap: 14px; }
+.sp-icon { width: 168px; height: 168px; border-radius: 26%; box-shadow: 0 12px 30px rgba(19, 41, 74, 0.18); animation: pop 0.9s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes pop { 0% { transform: scale(0.4) rotate(-10deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; } }
+.sp-ball { width: 22px; height: 22px; border-radius: 50%; background: var(--bad); animation: rollin 0.8s 0.5s ease-out both; }
+@keyframes rollin { from { transform: translateX(-120px) rotate(-360deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.sp-title { font-family: var(--font-num); font-size: 30px; font-weight: 700; letter-spacing: 0.04em; color: var(--ink); opacity: 0; animation: fadeup 0.45s 0.75s ease both; }
+.sp-sub { font-family: var(--font-num); font-weight: 600; letter-spacing: 0.2em; font-size: 12px; color: var(--muted); opacity: 0; animation: fadeup 0.45s 0.9s ease both; }
+@keyframes fadeup { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sp-icon, .sp-ball, .sp-title, .sp-sub { animation: none; opacity: 1; } }
+
+/* brag */
+.brag { border-color: var(--brand); }
+.brag .card-h h3::after { content: " 🐶"; }
+.brtxt { font-family: var(--font-body); font-size: 14px; line-height: 1.6; resize: none; min-height: 132px; background: var(--brand-wash); border-color: transparent; margin-top: 12px; }
+.btn.brand { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
+.day.pick { box-shadow: inset 0 0 0 2.5px var(--brand); }
+.day.sel.pick { box-shadow: inset 0 0 0 2.5px var(--brand), 0 0 0 0; }
+</style>
+
+<div id="splash" aria-hidden="true">
+  <div class="sp">
+    <img class="sp-icon" alt="" src="data:image/jpeg;base64,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">
+    <div class="sp-ball"></div>
+    <div class="sp-title">Crazy Bowl-in 🎳</div>
+    <div class="sp-sub">MY BALLS · MOTION · SCORES</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="appbar">
+    <img class="logo" alt="" src="data:image/jpeg;base64,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">
+    <h1>Crazy Bowl-in 🎳</h1>
+    <span class="tag" id="handTag">RIGHT</span>
+  </header>
+  <main>
+    <section class="page" id="p-myball" hidden></section>
+    <section class="page" id="p-motion" hidden></section>
+    <section class="page" id="p-drill" hidden></section>
+    <section class="page" id="p-scores" hidden></section>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="탭">
+  <div class="in">
+    <a href="#myball" id="t-myball"><span>마이볼 🎳</span><b>MY BALLS</b></a>
+    <a href="#motion" id="t-motion"><span>볼 움직임</span><b>MOTION</b></a>
+    <a href="#drill" id="t-drill"><span>지공</span><b>LAYOUT</b></a>
+    <a href="#scores" id="t-scores"><span>달력</span><b>SCORES</b></a>
+  </div>
+</nav>
+
+<script>
+(function () {
+  "use strict";
+  // ---------------- constants ----------------
+  var LIM = { rg: [2.43, 2.80], diff: [0, 0.060], asy: [0, 0.030] };
+  var BASE = { rg: 2.560, diff: 0.040, asy: 0.010 };
+  var KEYS = ["rg", "diff", "asy"];
+  var LBL = { rg: "RG", diff: "Diff", asy: "ASY" };
+  var SUB = { rg: "회전반경 · 언제 구르나", diff: "차이값 · 얼마나 꺾이나", asy: "비대칭값 · 지공 민감도" };
+  var ZONES = { rg: [2.52, 2.60], diff: [0.030, 0.045], asy: [0.005, 0.015] };
+  var ZN = ["낮음", "중간", "높음"];
+  var SENT = {
+    rg: ["RG가 낮아 오일 구간에서 일찍 구르기 시작해요.", "RG가 중간이라 구르기 시작하는 타이밍이 무난해요.", "RG가 높아 늦게 구르기 시작하고 길게 미끄러져요."],
+    diff: ["Diff가 낮아 플레어가 작고 호가 부드러워요.", "Diff가 중간이라 무난하게 꺾여요.", "Diff가 높아 플레어가 크고 많이 꺾여요."],
+    asy: ["ASY가 낮아 대칭에 가깝고, 지공을 바꿔도 성격 변화가 작아요.", "ASY가 약한 비대칭이라 지공에 따라 성격이 조금 바뀌어요.", "ASY가 높아 반응이 빠르고 지공에 따라 성격이 크게 바뀌어요."]
+  };
+  var QNAME = [["일찍 구르고 크게 꺾이는 타입", "길게 미끄러지다 크게 꺾이는 타입"], ["일찍 구르고 부드럽게 도는 타입", "길게 가다 부드럽게 도는 타입"]];
+  var QSHORT = [["일찍 · 크게 꺾임", "길게 · 크게 꺾임"], ["일찍 · 부드럽게", "길게 · 부드럽게"]];
+  var COVERS = [["solid", "솔리드", 0.95], ["hybrid", "하이브리드", 0.85], ["pearl", "펄", 0.72], ["urethane", "우레탄", 0.45], ["plastic", "플라스틱", 0.12]];
+  var GRITS = [["500", "500", 0.12], ["1000", "1000", 0.08], ["1500", "1500", 0.04], ["2000", "2000", 0], ["3000", "3000", -0.04], ["4000", "4000", -0.07], ["compound", "컴파운드", -0.10], ["polish", "폴리시", -0.14]];
+  var FEEL = ["많이 약하게", "약하게", "기본", "강하게", "많이 강하게"];
+
+  // ---------------- helpers ----------------
+  function $(s, r) { return (r || document).querySelector(s); }
+  function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function f3(v) { return Number(v).toFixed(3); }
+  function zone(k, v) { var z = ZONES[k]; return v < z[0] ? 0 : (v <= z[1] ? 1 : 2); }
+  function quad(b) { return { x: b.rg < BASE.rg ? 0 : 1, y: b.diff >= BASE.diff ? 0 : 1 }; }
+  function typeName(b) { var q = quad(b); return QNAME[q.y][q.x]; }
+  function lookup(list, key) { for (var i = 0; i < list.length; i++) if (list[i][0] === key) return list[i]; return list[0]; }
+  var FR = { 0: "", 1: "⅛", 2: "¼", 3: "⅜", 4: "½", 5: "⅝", 6: "¾", 7: "⅞" };
+  function frac(x) {
+    var e = Math.round(Math.abs(x) * 8), w = Math.floor(e / 8), r = e % 8;
+    return (w || !r ? String(w) : "") + FR[r] + "″";
+  }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function ymd(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function parseYmd(t) { var a = t.split("-"); return new Date(+a[0], +a[1] - 1, +a[2]); }
+  function fracPlain(x) { return frac(x).replace("″", ""); }
+
+  // ---------------- state ----------------
+  var KEY = "myball.note.v1", st = null;
+  try { st = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  function fresh() {
+    return {
+      profile: { hand: "R", papH: 5, papV: 0.5, rpm: 330, speed: 27, stand: 25, aim: 15, oil: 40, tilt: 12, rot: 45 },
+      balls: [{ id: 1, name: "만트라 (예시)", rg: 2.498, diff: 0.047, asy: 0.011, cover: "hybrid", grit: "compound", feel: 0, coverName: "HK22 Inciter Xtreme", layout: null }],
+      sel: 1, nextId: 2
+    };
+  }
+  if (!st || !st.profile || !Array.isArray(st.balls)) st = fresh();
+  if (st.profile.tilt == null) st.profile.tilt = 12;
+  if (st.profile.rot == null) st.profile.rot = 45;
+  if (!Array.isArray(st.games)) st.games = [];
+  (function () { var t = new Date(); if (!st.cal) st.cal = { y: t.getFullYear(), m: t.getMonth(), sel: ymd(t), mode: "month", lastBall: 0 }; })();
+  var edit = null; // ball being added/edited (not persisted)
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+  function selBall() { var b = st.balls.filter(function (x) { return x.id === st.sel; })[0]; if (!b && st.balls.length) { b = st.balls[0]; st.sel = b.id; } return b; }
+  function idx(b) { return st.balls.indexOf(b) + 1; }
+
+  // ---------------- components ----------------
+  function stepper(o) {
+    var el = document.createElement("div");
+    el.className = "stp";
+    el.innerHTML =
+      '<div class="stp-top"><span class="stp-k">' + o.label + "</span>" + (o.sub ? '<span class="stp-s">' + o.sub + "</span>" : "") + "</div>" +
+      '<div class="stp-row"><button type="button" class="sb" aria-label="' + o.label + ' 내리기">−</button>' +
+      '<input class="sv" id="' + o.id + '" inputmode="decimal" autocomplete="off" aria-label="' + o.label + ' 값">' +
+      '<button type="button" class="sb" aria-label="' + o.label + ' 올리기">+</button></div>' +
+      '<div class="stp-meta"><span class="ex"></span><span class="dl"></span>' + (o.base != null ? '<button type="button" class="lnk">기준값으로</button>' : "") + "</div>";
+    var btns = el.querySelectorAll(".sb"), inp = $(".sv", el), ex = $(".ex", el), dl = $(".dl", el);
+    function fx(v) { return Number(v).toFixed(o.dec); }
+    function refresh() {
+      var v = o.get();
+      inp.value = fx(v);
+      ex.textContent = o.extra ? o.extra(v) : (o.base != null ? "기준 " + fx(o.base) : "");
+      dl.className = "dl";
+      if (o.base != null) {
+        var d = +(v - o.base).toFixed(o.dec);
+        dl.textContent = d === 0 ? "· 기준과 같음" : "· 차이 " + (d > 0 ? "+" : "−") + Math.abs(d).toFixed(o.dec);
+      } else dl.textContent = "";
+    }
+    function setv(v) { o.set(+clamp(Math.round(v / o.step) * o.step, o.min, o.max).toFixed(o.dec)); refresh(); if (o.onChange) o.onChange(); }
+    function bump(dir, mult) { setv(o.get() + dir * o.step * mult); }
+    function hold(btn, dir) {
+      var t1, t2, n = 0;
+      function stop() { clearTimeout(t1); clearInterval(t2); }
+      btn.addEventListener("pointerdown", function (e) {
+        e.preventDefault(); stop(); bump(dir, 1); n = 0;
+        t1 = setTimeout(function () { t2 = setInterval(function () { n++; bump(dir, n > 14 ? 10 : 1); }, 70); }, 380);
+        if (btn.setPointerCapture) { try { btn.setPointerCapture(e.pointerId); } catch (x) {} }
+      });
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach(function (ev) { btn.addEventListener(ev, stop); });
+      btn.addEventListener("click", function (e) { if (e.detail === 0) bump(dir, 1); });
+    }
+    hold(btns[0], -1); hold(btns[1], 1);
+    inp.addEventListener("change", function () {
+      var v = parseFloat(inp.value.trim().replace(",", "."));
+      if (isNaN(v)) { refresh(); dl.className = "dl warn"; dl.textContent = "숫자로 넣어주세요"; return; }
+      var c = clamp(v, o.min, o.max);
+      setv(c);
+      if (c !== v) { dl.className = "dl warn"; dl.textContent = fx(o.min) + "~" + fx(o.max) + " 범위로 맞췄어요"; }
+    });
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowUp") { e.preventDefault(); bump(1, e.shiftKey ? 10 : 1); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); bump(-1, e.shiftKey ? 10 : 1); }
+      else if (e.key === "Enter") inp.blur();
+    });
+    var lnk = $(".lnk", el);
+    if (lnk) lnk.addEventListener("click", function () { setv(o.base); });
+    el.refresh = refresh;
+    refresh();
+    return el;
+  }
+  function segmented(opts, get, set, label) {
+    var el = document.createElement("div");
+    el.className = "seg"; el.setAttribute("role", "group"); el.setAttribute("aria-label", label);
+    opts.forEach(function (op) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = op[1]; b.dataset.v = op[0];
+      b.addEventListener("click", function () { set(op[0]); refresh(); });
+      el.appendChild(b);
+    });
+    function refresh() { el.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === String(get()))); }); }
+    el.refresh = refresh; refresh();
+    return el;
+  }
+  function range(o) {
+    var el = document.createElement("div");
+    el.className = "rng";
+    el.innerHTML = '<div class="rng-top"><span>' + o.label + '</span><output for="' + o.id + '"></output></div>' +
+      '<input type="range" id="' + o.id + '" min="' + o.min + '" max="' + o.max + '" step="' + o.step + '">' +
+      (o.ends ? '<div class="rng-ends"><span>' + o.ends[0] + "</span><span>" + o.ends[1] + "</span></div>" : "");
+    var inp = $("input", el), out = $("output", el);
+    function paint() { inp.style.setProperty("--fill", ((inp.value - o.min) / (o.max - o.min) * 100) + "%"); out.innerHTML = o.fmt(+inp.value); }
+    function refresh() { inp.value = o.get(); paint(); }
+    inp.addEventListener("input", function () { o.set(+inp.value); paint(); if (o.onChange) o.onChange(); });
+    el.refresh = refresh; refresh();
+    return el;
+  }
+
+  // ---------------- model ----------------
+  function friction(b) {
+    return clamp(lookup(COVERS, b.cover)[2] + lookup(GRITS, b.grit)[2] + (b.feel || 0) * 0.06, 0.05, 1.2);
+  }
+  function layoutFx(b) {
+    var L = b.layout;
+    if (!L) return { flare: 1, len: 0, ang: 0 };
+    var aN = b.asy / 0.03, d = L.pinPap;
+    var th = Math.min(d, 6.75) / 6.75 * Math.PI / 2;
+    var flare = 0.55 + 0.6 * Math.sin(2 * th);
+    var len = (d - 4) * 0.25, ang = (d - 4) * 0.12;
+    if (L.fmt === "vls") {
+      ang += (2.5 - L.buffer) * 0.15;
+      if (aN > 0.15) ang += aN * (5 - L.mb) * 0.06;
+    } else {
+      len += (L.drill - 45) / 45 * 0.8;
+      ang += (L.drill - 45) / 45 * 0.4 + (45 - L.val) / 45 * 0.4;
+    }
+    return { flare: flare, len: clamp(len, -1.5, 1.5), ang: clamp(ang, -1, 1) };
+  }
+  function simulate(b, pr, useLayout) {
+    var rgN = (b.rg - 2.43) / 0.37, dN = b.diff / 0.06, aN = b.asy / 0.03;
+    var F = friction(b), mph = pr.speed / 1.609, rv = clamp((pr.rpm / mph - 14) / 10, -0.6, 1);
+    var fx = useLayout ? layoutFx(b) : { flare: 1, len: 0, ang: 0 };
+    var tiltN = (pr.tilt - 12) / 12, rotN = (pr.rot - 45) / 30;
+    var hMul = (1 - 0.12 * tiltN) * (1 + 0.08 * rotN) * (1 - Math.max(0, (pr.rot - 70) / 20) * 0.35);
+    var S = 0.42 * F + 0.28 * dN * fx.flare + 0.18 * rv + 0.12 * (1 - rgN);
+    var H = clamp((3 + 9 * S) * hMul, 3, 17);
+    var bp = clamp(pr.oil - 5 * F - 3 * rv + 5 * rgN + 0.3 * (pr.speed - 26) + fx.len * 3 + tiltN * 2.5 + rotN * 2, 24, 50);
+    var p = clamp(1.4 + aN + 0.8 * (0.9 - F) + fx.ang * 0.8 + rotN * 0.3, 1.1, 3.2);
+    var L0 = pr.stand - 5, m = (pr.aim - L0) / 15, pts = [];
+    for (var f = 0; f <= 60.0001; f += 0.5) {
+      var bd;
+      if (f <= bp) bd = L0 + m * f;
+      else { var t = (f - bp) / (60 - bp); bd = L0 + m * bp + m * (f - bp) * (1 - t) + H * Math.pow(t, p); }
+      pts.push([f, bd]);
+    }
+    var mi = 0;
+    pts.forEach(function (q, i) { if (q[1] < pts[mi][1]) mi = i; });
+    if (pts[mi][0] < 6) { mi = Math.round(bp / 0.5); }
+    var E = pts[pts.length - 1][1], prev = pts[pts.length - 3][1];
+    var slope = (E - prev) / 1;
+    var entry = Math.atan(Math.abs(slope) * 1.0641 / 12) * 180 / Math.PI;
+    var gutter = pts.some(function (q) { return q[1] < 0.5 || q[1] > 38.5; });
+    return { pts: pts, bpFt: pts[mi][0], bpBoard: pts[mi][1], E: E, entry: entry, H: H, p: p, F: F, len: bp, gutter: gutter, fx: fx };
+  }
+  function pocket(E) {
+    var d = E - 17.5;
+    if (Math.abs(d) <= 1.2) return ["good", "포켓"];
+    if (d > 3.5) return ["bad", "브루클린 쪽"];
+    if (d > 0) return ["warn", "두껍게"];
+    if (d < -3) return ["bad", "많이 얇게"];
+    return ["warn", "얇게"];
+  }
+  function sideWord(sign) { // sign>0 : toward higher board numbers
+    var right = st.profile.hand === "R";
+    return (sign > 0) === right ? "왼쪽" : "오른쪽";
+  }
+
+  // ---------------- charts ----------------
+  function mapSVG(points, arrows) {
+    var W = 340, H = 316, L = 46, R = 14, T = 12, B = 46, PW = W - L - R, PH = H - T - B, cx = L + PW / 2, cy = T + PH / 2;
+    function sx(v) { v = clamp(v, 2.43, 2.8); return v <= BASE.rg ? L + (v - 2.43) / (BASE.rg - 2.43) * PW / 2 : cx + (v - BASE.rg) / (2.8 - BASE.rg) * PW / 2; }
+    function sy(v) { v = clamp(v, 0, 0.06); return v <= BASE.diff ? T + PH - v / BASE.diff * PH / 2 : cy - (v - BASE.diff) / (0.06 - BASE.diff) * PH / 2; }
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="RG와 Diff 지도. 십자선 가운데가 기준점">';
+    s += '<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>';
+    s += '<rect x="' + L + '" y="' + T + '" width="' + PW + '" height="' + PH + '" fill="var(--surface2)"/>';
+    var sel = points.filter(function (p) { return p.sel; })[0];
+    if (sel) { var q = quad(sel); s += '<rect x="' + (q.x ? cx : L) + '" y="' + (q.y ? cy : T) + '" width="' + PW / 2 + '" height="' + PH / 2 + '" fill="var(--wash)"/>'; }
+    [2.50, 2.70].forEach(function (t) { s += '<line x1="' + sx(t) + '" y1="' + T + '" x2="' + sx(t) + '" y2="' + (T + PH) + '" stroke="var(--grid)"/>'; });
+    [0.02, 0.05].forEach(function (t) { s += '<line x1="' + L + '" y1="' + sy(t) + '" x2="' + (L + PW) + '" y2="' + sy(t) + '" stroke="var(--grid)"/>'; });
+    [2.43, 2.50, 2.56, 2.70, 2.80].forEach(function (t) {
+      var c = t === 2.56;
+      s += '<text class="num" x="' + sx(t) + '" y="' + (T + PH + 16) + '" text-anchor="middle" font-size="12" fill="' + (c ? "var(--ink)" : "var(--muted)") + '">' + t.toFixed(2) + "</text>";
+    });
+    [0, 0.02, 0.04, 0.05, 0.06].forEach(function (t) {
+      var c = t === 0.04;
+      s += '<text class="num" x="' + (L - 6) + '" y="' + (sy(t) + 4) + '" text-anchor="end" font-size="12" fill="' + (c ? "var(--ink)" : "var(--muted)") + '">' + t.toFixed(2) + "</text>";
+    });
+    s += '<rect x="' + L + '" y="' + T + '" width="' + PW + '" height="' + PH + '" fill="none" stroke="var(--line)"/>';
+    s += '<line x1="' + cx + '" y1="' + T + '" x2="' + cx + '" y2="' + (T + PH) + '" stroke="var(--ink2)" stroke-opacity="0.5" stroke-width="1.5"/>';
+    s += '<line x1="' + L + '" y1="' + cy + '" x2="' + (L + PW) + '" y2="' + cy + '" stroke="var(--ink2)" stroke-opacity="0.5" stroke-width="1.5"/>';
+    function ql(x, y, a, t1, t2) { return '<text x="' + x + '" y="' + y + '" text-anchor="' + a + '" font-size="11" fill="var(--muted)">' + t1 + '<tspan x="' + x + '" dy="14">' + t2 + "</tspan></text>"; }
+    s += ql(L + 8, T + 18, "start", "일찍 구르고", "크게 꺾임") + ql(L + PW - 8, T + 18, "end", "길게 미끄러지다", "크게 꺾임") +
+         ql(L + 8, T + PH - 24, "start", "일찍 구르고", "부드럽게") + ql(L + PW - 8, T + PH - 24, "end", "길게 가고", "부드럽게");
+    s += '<text x="' + cx + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" fill="var(--ink2)">RG  ← 일찍 구름 · 늦게 구름 →</text>';
+    s += '<text transform="translate(11 ' + cy + ') rotate(-90)" text-anchor="middle" font-size="11" fill="var(--ink2)">Diff  ← 부드럽게 · 크게 꺾임 →</text>';
+    (arrows || []).forEach(function (a) {
+      s += '<line x1="' + sx(a.from.rg) + '" y1="' + sy(a.from.diff) + '" x2="' + sx(a.to.rg) + '" y2="' + sy(a.to.diff) + '" stroke="var(--accent)" stroke-width="2" marker-end="url(#ah)"/>';
+    });
+    points.forEach(function (p) { if (!p.sel) s += dot(p); });
+    points.forEach(function (p) { if (p.sel) s += dot(p); });
+    function dot(p) {
+      var x = sx(p.rg), y = sy(p.diff), o = "";
+      if (p.kind === "ring") {
+        o += '<circle cx="' + x + '" cy="' + y + '" r="8" fill="var(--surface)" stroke="var(--path0)" stroke-width="3"/>';
+      } else {
+        o += '<circle cx="' + x + '" cy="' + y + '" r="11" fill="' + (p.sel ? "var(--accent)" : "var(--ink)") + '" stroke="var(--surface)" stroke-width="2"/>';
+        if (p.num != null) o += '<text class="num" x="' + x + '" y="' + (y + 4.5) + '" text-anchor="middle" font-size="13" fill="' + (p.sel ? "var(--on-accent)" : "var(--surface)") + '">' + p.num + "</text>";
+      }
+      if (p.label) {
+        var right = x < L + PW - 90, lx = right ? x + 15 : x - 15;
+        o += '<text x="' + lx + '" y="' + (y + 4) + '" text-anchor="' + (right ? "start" : "end") + '" font-size="12" font-weight="700" fill="var(--ink)" paint-order="stroke" stroke="var(--surface2)" stroke-width="4">' + esc(p.label) + "</text>";
+      }
+      return o;
+    }
+    return s + "</svg>";
+  }
+
+  function laneSVG(paths, pr, marks) {
+    var W = 250, H = 520, lx = 36, lw = 156, T = 70, Bt = 470, bw = lw / 39, ft = (Bt - T) / 60, R = pr.hand === "R";
+    function X(bd) { bd = clamp(bd, 0, 39); return R ? lx + lw - bd * bw : lx + bd * bw; }
+    function Y(f) { return Bt - f * ft; }
+    var top = 34, bot = Bt + 44;
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="레인 위 예상 궤적">';
+    s += '<rect x="' + (lx - 13) + '" y="' + top + '" width="13" height="' + (Bt - top) + '" rx="6.5" fill="var(--gutter)"/>';
+    s += '<rect x="' + (lx + lw) + '" y="' + top + '" width="13" height="' + (Bt - top) + '" rx="6.5" fill="var(--gutter)"/>';
+    s += '<rect x="' + lx + '" y="' + top + '" width="' + lw + '" height="' + (bot - top) + '" fill="var(--lane)"/>';
+    for (var i = 1; i < 39; i++) s += '<line x1="' + X(i) + '" y1="' + top + '" x2="' + X(i) + '" y2="' + bot + '" stroke="var(--laneLine)" stroke-opacity="' + (i % 5 === 0 ? 0.42 : 0.15) + '"/>';
+    s += '<rect x="' + lx + '" y="' + Y(pr.oil) + '" width="' + lw + '" height="' + (Y(0) - Y(pr.oil)) + '" fill="var(--oil)"/>';
+    s += '<text x="' + (lx + 5) + '" y="' + (Y(pr.oil) + 13) + '" font-size="9.5" fill="var(--ink2)">오일 ' + pr.oil + "ft</text>";
+    [5, 10, 15, 20, 25, 30, 35].forEach(function (bd) { var x = X(bd), y = Y(15); s += '<path d="M' + x + " " + (y - 7) + " L" + (x - 3.5) + " " + (y + 3) + " L" + (x + 3.5) + " " + (y + 3) + 'Z" fill="var(--ink2)" fill-opacity="0.55"/>'; });
+    s += '<line x1="' + lx + '" y1="' + Y(0) + '" x2="' + (lx + lw) + '" y2="' + Y(0) + '" stroke="var(--ink)" stroke-width="2"/>';
+    [[0, 0], [-1, 1], [1, 1], [-2, 2], [0, 2], [2, 2], [-3, 3], [-1, 3], [1, 3], [3, 3]].forEach(function (pc) {
+      s += '<circle cx="' + X(20 + pc[0] * 5.64) + '" cy="' + Y(60 + pc[1] * 0.866) + '" r="5.5" fill="var(--pin)" stroke="var(--pinEdge)"/>';
+    });
+    // aim + stand markers
+    s += '<circle cx="' + X(pr.aim) + '" cy="' + Y(15) + '" r="7" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+    s += '<path d="M' + X(pr.stand) + " " + (Bt + 16) + " l-6 10 h12 z" + '" fill="var(--ink)"/>';
+    s += '<text x="' + X(pr.stand) + '" y="' + (Bt + 40) + '" text-anchor="middle" font-size="9.5" fill="var(--ink2)">서는 위치 ' + pr.stand + "</text>";
+    paths.forEach(function (p) {
+      var d = p.sim.pts.filter(function (q) { return q[0] <= 58.5; }).map(function (q, i) { return (i ? "L" : "M") + X(q[1]).toFixed(1) + " " + Y(q[0]).toFixed(1); }).join(" ");
+      s += '<path d="' + d + '" fill="none" stroke="' + p.color + '" stroke-width="' + p.w + '" stroke-opacity="' + (p.op || 1) + '" stroke-linecap="round" stroke-linejoin="round"/>';
+    });
+    var main = paths[paths.length - 1].sim;
+    s += '<circle cx="' + X(main.bpBoard) + '" cy="' + Y(main.bpFt) + '" r="4.5" fill="var(--ink)" stroke="var(--surface)" stroke-width="2"/>';
+    var bpRight = R ? true : false; // label toward lane centre
+    s += '<text x="' + (X(main.bpBoard) + (bpRight ? -9 : 9)) + '" y="' + (Y(main.bpFt) + 4) + '" text-anchor="' + (bpRight ? "end" : "start") + '" font-size="10" font-weight="500" fill="var(--ink)" paint-order="stroke" stroke="var(--lane)" stroke-width="3">브레이크포인트</text>';
+    var e = main.pts.filter(function (q) { return q[0] <= 58.5; }).pop();
+    s += '<circle cx="' + X(e[1]) + '" cy="' + Y(e[0]) + '" r="8" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
+    var lbx = R ? lx + lw + 17 : 4;
+    [0, 15, 40, 60].forEach(function (f) { s += '<text class="num" x="' + lbx + '" y="' + (Y(f) + 4) + '" font-size="11" fill="var(--muted)">' + f + "ft</text>"; });
+    return s + "</svg>";
+  }
+
+  // ---------------- page: my balls ----------------
+  var My = { built: false, edSteps: [], papSteps: [] };
+  My.build = function () {
+    var p = $("#p-myball");
+    p.innerHTML =
+      '<div class="ph"><div><div class="sec">My balls</div><h2>마이볼</h2></div><div class="count" id="my-count"></div></div>' +
+      '<div class="card"><div class="card-h"><h3>스펙 지도</h3><span class="sec">RG × Diff</span></div>' +
+      '<p class="notice"><b>제조사 스펙(지공 전) 기준 특성이에요.</b> 지공 후 반응은 지공 탭에서 따로 비교해요.</p>' +
+      '<div class="map" id="my-map" style="margin-top:12px"></div><div class="quads" id="my-quads"></div><p class="qsum" id="my-qsum"></p>' +
+      '<p class="fn">십자선 가운데가 기준점(RG 2.560, Diff 0.040)이에요. 기준점을 가운데 두려고 좌우·위아래 눈금 간격을 다르게 잡았어요. 숫자는 아래 리스트 번호예요.</p></div>' +
+      '<button type="button" class="btn pri block" id="my-add">+ 볼 추가</button>' +
+      '<div class="card editor" id="my-ed" hidden></div>' +
+      '<div class="card"><div class="card-h"><h3>볼 리스트</h3><span class="fn" style="margin:0">볼을 누르면 움직임 예상으로 넘어가요</span></div><ul class="list" id="my-list"></ul></div>' +
+      '<div class="card" id="my-me"><div class="card-h"><h3>내 투구 정보</h3><span class="sec">Bowler</span></div>' +
+      '<div class="field"><span class="flabel">투구 손</span><div id="my-hand"></div></div>' +
+      '<div class="stps two" id="my-pap" style="margin-top:16px"></div><div id="my-papx"></div>' +
+      '<div class="sec" style="margin-top:20px">축 각도 (선택)</div><div class="stps two" id="my-axis" style="margin-top:8px"></div><ul class="advice" id="my-axisx" style="margin-top:10px"></ul></div>';
+    $("#my-add").addEventListener("click", function () { openEditor(null); });
+    $("#my-hand").appendChild(handSeg());
+    My.papSteps = [
+      stepper({ id: "pap-h", label: "PAP 가로", sub: "그립 중심선에서", min: 2, max: 7, step: 0.125, dec: 3,
+        get: function () { return st.profile.papH; }, set: function (v) { st.profile.papH = v; }, extra: function (v) { return frac(v); }, onChange: function () { papText(); save(); } }),
+      stepper({ id: "pap-v", label: "PAP 세로", sub: "+ 위 / − 아래", min: -2, max: 2, step: 0.125, dec: 3,
+        get: function () { return st.profile.papV; }, set: function (v) { st.profile.papV = v; }, extra: function (v) { return (v >= 0 ? "위 " : "아래 ") + frac(v); }, onChange: function () { papText(); save(); } })
+    ];
+    My.papSteps.forEach(function (s) { $("#my-pap").appendChild(s); });
+    My.axis = axisRanges("my", function () { axisText(); save(); });
+    My.axis.forEach(function (r) { $("#my-axis").appendChild(r); });
+  };
+  function axisRanges(prefix, onChange) {
+    var pr = st.profile;
+    return [
+      range({ id: prefix + "-tilt", label: "축 기울기 (tilt)", min: 0, max: 30, step: 1, ends: ["0°", "30°"], get: function () { return pr.tilt; }, set: function (v) { pr.tilt = v; }, fmt: function (v) { return v + "<small>°</small>"; }, onChange: onChange }),
+      range({ id: prefix + "-rot", label: "축 회전 (rotation)", min: 0, max: 90, step: 5, ends: ["0° 앞으로 굴림", "90° 스핀"], get: function () { return pr.rot; }, set: function (v) { pr.rot = v; }, fmt: function (v) { return v + "<small>°</small>"; }, onChange: onChange })
+    ];
+  }
+  function axisSent() {
+    var t = st.profile.tilt, r = st.profile.rot;
+    var ts = t < 8 ? "축 기울기가 작아 레인을 일찍 잡는 쪽이에요." : t > 18 ? "축 기울기가 커서 길게 미끄러지는 쪽이에요." : "축 기울기가 보통 범위예요.";
+    var rs = r < 30 ? "앞으로 굴리는 롤에 가까워 일찍·부드럽게 구르는 쪽이에요." : r > 80 ? "스피너에 가까워 훅이 줄어드는 쪽이에요." : r > 60 ? "옆으로 많이 돌아 나와 길게 가다 후반에 크게 꺾이는 쪽이에요." : "축 회전이 보통 범위예요.";
+    return [["축 기울기 " + t + "°", ts], ["축 회전 " + r + "°", rs]];
+  }
+  function axisText() {
+    $("#my-axisx").innerHTML = axisSent().map(function (a) { return "<li><b>" + a[0] + "</b> · " + a[1] + "</li>"; }).join("") +
+      "<li>둘 다 릴리즈 때 볼 회전축이 얼마나 눕고(기울기) 옆으로 돌아갔는지(회전)를 각도로 나타낸 값이고, PAP 위치를 만드는 원인이에요. 모르면 기본값(12°, 45°) 그대로 두세요. 볼 움직임 탭 궤적에 반영돼요.</li>";
+  }
+  function handSeg() {
+    var s = segmented([["R", "오른손"], ["L", "왼손"]], function () { return st.profile.hand; }, function (v) { st.profile.hand = v; save(); updateHandTag(); }, "투구 손");
+    s.classList.add("hand-seg");
+    return s;
+  }
+  function updateHandTag() { $("#handTag").textContent = st.profile.hand === "R" ? "RIGHT" : "LEFT"; document.querySelectorAll(".hand-seg").forEach(function (h) { h.refresh(); }); }
+  function papText() {
+    var h = st.profile.papH, v = st.profile.papV;
+    var hs = h < 4.25 ? "가로 거리가 짧은 편이에요. 손이 볼 옆으로 많이 돌아 나오는(축 회전이 큰) 투구에서 자주 나와요."
+      : (h > 5.75 ? "가로 거리가 긴 편이에요. 앞으로 굴려 내보내는(축 회전이 작은) 투구에서 자주 나와요."
+      : "가장 흔한 범위(약 4½~5½″)예요. 축 회전이 보통인 투구에서 많이 나와요.");
+    $("#my-papx").innerHTML =
+      '<p class="lstr" style="font-size:28px">' + fracPlain(h) + " × " + fracPlain(v) + " " + (v >= 0 ? "UP" : "DOWN") + "<small>내 PAP (가로 × 세로)</small></p>" +
+      '<ul class="advice" style="margin-top:10px"><li>' + hs + "</li>" +
+      "<li>세로는 그립 중심선보다 위인 경우가 더 흔하지만, 아래인 볼러도 있어요. 지금은 <b>" + (v >= 0 ? "위 " : "아래 ") + frac(v) + "</b>예요.</li>" +
+      "<li><b>PAP(Positive Axis Point, 양의 축점)</b>는 공이 굴러갈 때 회전축이 공 표면에 닿는 점이에요. 지공 탭의 핀-PAP, MB-PAP 거리는 모두 이 점에서 잰 값이라 정확할수록 계산이 맞아요.</li>" +
+      "<li>PAP는 프로샵에서 볼 트랙(오일 자국 링)을 보고 재요. 모르면 보통 5″ × ½″ 위로 두고 시작해도 돼요.</li></ul>";
+  }
+  function openEditor(b) {
+    edit = b ? JSON.parse(JSON.stringify(b)) : { id: 0, name: "", rg: BASE.rg, diff: BASE.diff, asy: BASE.asy, cover: "hybrid", grit: "2000", feel: 0, coverName: "", layout: null };
+    var ed = $("#my-ed");
+    ed.hidden = false;
+    ed.innerHTML =
+      '<div class="card-h"><h3>' + (b ? "볼 수정" : "볼 추가") + '</h3><span class="sec">' + (b ? "Edit" : "New ball") + "</span></div>" +
+      '<div class="field"><label for="ed-name">볼 이름</label><input class="txt" id="ed-name" maxlength="24" autocomplete="off" placeholder="예: 만트라 15lb"></div>' +
+      '<div><div class="sec" style="margin-bottom:8px">코어 스펙</div><div class="stps three" id="ed-stps"></div></div>' +
+      '<div><div class="sec" style="margin-bottom:8px">외피</div><div class="field"><span class="flabel">커버 종류</span><div id="ed-cover"></div></div>' +
+      '<div class="field" style="margin-top:12px"><span class="flabel">지금 표면 (그릿)</span><div id="ed-grit"></div></div>' +
+      '<div class="field" style="margin-top:12px" id="ed-feel"></div>' +
+      '<div class="field" style="margin-top:12px"><label for="ed-cname">커버 이름 (선택, 메모용)</label><input class="txt" id="ed-cname" maxlength="40" autocomplete="off" placeholder="예: HK22"></div></div>' +
+      '<p class="msg fn" id="ed-msg" style="margin:0"></p>' +
+      '<div class="acts"><button type="button" class="btn pri" id="ed-save">' + (b ? "저장" : "리스트에 추가") + '</button><button type="button" class="btn ghost" id="ed-cancel">취소</button>' +
+      (b ? '<button type="button" class="btn ghost danger" id="ed-del" style="margin-left:auto">이 볼 지우기</button>' : "") + "</div>";
+    $("#ed-name").value = edit.name;
+    $("#ed-cname").value = edit.coverName || "";
+    $("#ed-name").addEventListener("input", function (e) { edit.name = e.target.value; });
+    $("#ed-cname").addEventListener("input", function (e) { edit.coverName = e.target.value; });
+    KEYS.forEach(function (k) {
+      $("#ed-stps").appendChild(stepper({ id: "ed-" + k, label: LBL[k], sub: SUB[k], min: LIM[k][0], max: LIM[k][1], step: 0.001, dec: 3, base: BASE[k],
+        get: function () { return edit[k]; }, set: function (v) { edit[k] = v; } }));
+    });
+    $("#ed-cover").appendChild(segmented(COVERS.map(function (c) { return [c[0], c[1]]; }), function () { return edit.cover; }, function (v) { edit.cover = v; }, "커버 종류"));
+    $("#ed-grit").appendChild(segmented(GRITS.map(function (c) { return [c[0], c[1]]; }), function () { return edit.grit; }, function (v) { edit.grit = v; }, "표면"));
+    $("#ed-feel").appendChild(range({ id: "ed-feelr", label: "체감 보정 · 같은 종류 안에서", min: -2, max: 2, step: 1, ends: ["약하게", "강하게"],
+      get: function () { return edit.feel || 0; }, set: function (v) { edit.feel = v; }, fmt: function (v) { return '<span style="font-size:15px">' + FEEL[v + 2] + "</span>"; } }));
+    $("#ed-cancel").addEventListener("click", closeEditor);
+    $("#ed-save").addEventListener("click", function () {
+      if (!edit.name.trim()) { $("#ed-msg").textContent = "볼 이름을 넣어주세요."; $("#ed-name").focus(); return; }
+      edit.name = edit.name.trim();
+      if (edit.id) { st.balls = st.balls.map(function (x) { return x.id === edit.id ? edit : x; }); }
+      else { edit.id = st.nextId++; st.balls.push(edit); }
+      st.sel = edit.id;
+      closeEditor(); save(); My.update();
+    });
+    var del = $("#ed-del");
+    if (del) del.addEventListener("click", function () {
+      if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "한 번 더 누르면 지워져요"; return; }
+      st.balls = st.balls.filter(function (x) { return x.id !== edit.id; });
+      closeEditor(); save(); My.update();
+    });
+    $("#my-add").hidden = true;
+    ed.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+  function closeEditor() { edit = null; $("#my-ed").hidden = true; $("#my-ed").innerHTML = ""; $("#my-add").hidden = false; }
+  My.update = function () {
+    var balls = st.balls, b0 = selBall();
+    $("#my-count").innerHTML = "<b>" + balls.length + "</b>개";
+    $("#my-map").innerHTML = mapSVG(balls.map(function (b, i) { return { rg: b.rg, diff: b.diff, num: i + 1, sel: b0 && b.id === b0.id, label: b0 && b.id === b0.id ? b.name : null }; }));
+    var cnt = [[0, 0], [0, 0]];
+    balls.forEach(function (b) { var q = quad(b); cnt[q.y][q.x]++; });
+    var max = Math.max(cnt[0][0], cnt[0][1], cnt[1][0], cnt[1][1]);
+    var cells = [[0, 0], [0, 1], [1, 0], [1, 1]];
+    $("#my-quads").innerHTML = cells.map(function (c) {
+      var n = cnt[c[0]][c[1]];
+      return '<div class="qd' + (n && n === max ? " top" : "") + '"><span>' + QSHORT[c[0]][c[1]] + "</span><b>" + n + "</b></div>";
+    }).join("");
+    var tops = cells.filter(function (c) { return max && cnt[c[0]][c[1]] === max; });
+    $("#my-qsum").innerHTML = !balls.length ? "볼을 추가하면 내 볼들이 어느 성향에 몰려 있는지 알려드려요."
+      : (tops.length === 1 ? "내 볼은 <b>" + QSHORT[tops[0][0]][tops[0][1]] + "</b> 쪽에 가장 많아요." + (balls.length > 1 && max === balls.length ? " 다른 성향 볼이 하나 있으면 레인 대응 폭이 넓어져요." : "")
+      : "내 볼은 " + tops.map(function (c) { return "<b>" + QSHORT[c[0]][c[1]] + "</b>"; }).join(", ") + " 쪽에 고르게 나뉘어 있어요.");
+    var ul = $("#my-list");
+    ul.innerHTML = "";
+    if (!balls.length) ul.innerHTML = '<li style="display:block"><p class="empty">아직 등록한 볼이 없어요. 위의 “+ 볼 추가”로 첫 볼을 넣어보세요.</p></li>';
+    balls.forEach(function (b, i) {
+      var li = document.createElement("li");
+      var isSel = b0 && b.id === b0.id;
+      li.innerHTML =
+        '<button type="button" class="row-main"><span class="nb' + (isSel ? " sel" : "") + '">' + (i + 1) + "</span>" +
+        '<span style="min-width:0"><span class="rn">' + esc(b.name) + '</span><span class="rs">' + lookup(COVERS, b.cover)[1] + " · " + lookup(GRITS, b.grit)[1] + (b.layout ? " · 지공 입력됨" : "") + "</span>" +
+        '<span class="rs"><span class="v">RG ' + f3(b.rg) + " · DIFF " + f3(b.diff) + " · ASY " + f3(b.asy) + "</span></span></span>" +
+        '<span class="rt">' + QSHORT[quad(b).y][quad(b).x] + "</span></button>" +
+        '<button type="button" class="row-edit">수정</button>';
+      li.children[0].addEventListener("click", function () { st.sel = b.id; save(); location.hash = "#motion"; });
+      li.children[1].addEventListener("click", function () { openEditor(b); });
+      ul.appendChild(li);
+    });
+    My.papSteps.forEach(function (s) { s.refresh(); });
+    My.axis.forEach(function (r) { r.refresh(); });
+    papText();
+    axisText();
+    updateHandTag();
+    save();
+  };
+
+  // ---------------- page: motion ----------------
+  var Mo = { built: false, ctrls: [] };
+  function ballPicker(id, onPick) {
+    var w = document.createElement("div");
+    w.className = "picker";
+    w.innerHTML = '<label class="flabel" for="' + id + '">볼 선택</label><select id="' + id + '"></select>';
+    var sel = $("select", w);
+    sel.addEventListener("change", function () { st.sel = +sel.value; save(); onPick(); });
+    w.refresh = function () {
+      sel.innerHTML = st.balls.map(function (b, i) { return '<option value="' + b.id + '">' + (i + 1) + ". " + esc(b.name) + "</option>"; }).join("");
+      var b = selBall(); if (b) sel.value = String(b.id);
+    };
+    return w;
+  }
+  Mo.build = function () {
+    var p = $("#p-motion");
+    p.innerHTML =
+      '<div class="ph"><div><div class="sec">Ball motion</div><h2>볼 움직임 예상</h2></div></div>' +
+      '<div id="mo-empty" class="card" hidden><p class="empty">마이볼 탭에서 볼을 먼저 추가해주세요.</p></div>' +
+      '<div id="mo-body" class="page">' +
+      '<div class="card"><div id="mo-pick"></div><div class="hero" style="margin-top:14px"><span class="sec">스펙 + 외피 + 지공 기준</span><h3 id="mo-type"></h3><p id="mo-meta"></p></div><div class="stats" id="mo-stats"></div></div>' +
+      '<div class="card"><div class="card-h"><h3>레인 위 예상 궤적</h3><span class="sec" id="mo-hand"></span></div>' +
+      '<div class="lanewrap"><div><div class="lanefig" id="mo-lane"></div><div class="legend" id="mo-leg"></div></div><div class="ctrls" id="mo-ctrls"><div class="field"><span class="flabel">투구 손</span><div id="mo-handseg"></div></div></div></div></div>' +
+      '<div class="card"><div class="card-h"><h3>코치 메모</h3><span class="sec">Notes</span></div><ul class="advice" id="mo-adv"></ul></div>' +
+      '<div class="card"><div class="card-h"><h3>이 볼의 성향</h3></div><ul class="advice" id="mo-why"></ul>' +
+      '<p class="fn">궤적은 스펙·외피·지공과 입력한 투구 정보로 그린 예상 모델이에요. 실제는 레인 오일 패턴, 리프트, 축 기울기 등에 따라 달라지니 경향을 보는 용도로 써주세요.</p></div></div>';
+    Mo.pick = ballPicker("mo-ball", function () { Mo.update(); });
+    $("#mo-pick").appendChild(Mo.pick);
+    var hs = handSeg();
+    hs.querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { Mo.update(); }); });
+    $("#mo-handseg").appendChild(hs);
+    var pr = st.profile;
+    Mo.ctrls = [
+      range({ id: "mo-rpm", label: "평균 회전수", min: 100, max: 600, step: 5, ends: ["100", "600"], get: function () { return pr.rpm; }, set: function (v) { pr.rpm = v; }, fmt: function (v) { return v + "<small>RPM</small>"; }, onChange: function () { Mo.update(); } }),
+      range({ id: "mo-spd", label: "볼 스피드 (릴리즈)", min: 15, max: 35, step: 0.5, ends: ["15", "35"], get: function () { return pr.speed; }, set: function (v) { pr.speed = v; }, fmt: function (v) { return v.toFixed(1) + "<small>km/h</small>"; }, onChange: function () { Mo.update(); } }),
+    ].concat(axisRanges("mo", function () { Mo.update(); })).concat([
+      range({ id: "mo-std", label: "서는 위치 (슬라이드 발)", min: 5, max: 39, step: 1, ends: ["5보드", "39보드"], get: function () { return pr.stand; }, set: function (v) { pr.stand = v; }, fmt: function (v) { return v + "<small>보드</small>"; }, onChange: function () { Mo.update(); } }),
+      range({ id: "mo-aim", label: "에임 스팟 (15ft 스팟)", min: 1, max: 35, step: 1, ends: ["1보드", "35보드"], get: function () { return pr.aim; }, set: function (v) { pr.aim = v; }, fmt: function (v) { return v + "<small>보드</small>"; }, onChange: function () { Mo.update(); } }),
+      range({ id: "mo-oil", label: "오일 길이", min: 32, max: 48, step: 1, ends: ["32ft", "48ft"], get: function () { return pr.oil; }, set: function (v) { pr.oil = v; }, fmt: function (v) { return v + "<small>ft</small>"; }, onChange: function () { Mo.update(); } })
+    ]);
+    Mo.ctrls.forEach(function (c) { $("#mo-ctrls").appendChild(c); });
+  };
+  Mo.update = function () {
+    var b = selBall(), pr = st.profile;
+    $("#mo-empty").hidden = !!b; $("#mo-body").hidden = !b;
+    if (!b) { save(); return; }
+    Mo.pick.refresh();
+    Mo.ctrls.forEach(function (c) { c.refresh(); });
+    updateHandTag();
+    var after = simulate(b, pr, true), before = b.layout ? simulate(b, pr, false) : null;
+    $("#mo-type").textContent = idx(b) + ". " + b.name;
+    $("#mo-meta").textContent = typeName(b) + " · " + lookup(COVERS, b.cover)[1] + " " + lookup(GRITS, b.grit)[1] + ((b.feel || 0) ? " · 체감 " + FEEL[b.feel + 2] : "") + (b.layout ? " · 지공 반영" : " · 지공 정보 없음");
+    $("#mo-hand").textContent = pr.hand === "R" ? "RIGHT · 1-3 POCKET" : "LEFT · 1-2 POCKET";
+    var pk = pocket(after.E);
+    $("#mo-stats").innerHTML =
+      '<div class="stat"><span>진입각</span><b>' + after.entry.toFixed(1) + "<small>°</small></b>" + '<span class="pill ' + (after.entry < 3.5 ? "warn" : after.entry > 6.5 ? "warn" : "good") + '">' + (after.entry < 3.5 ? "얕음" : after.entry > 6.5 ? "큰 편" : "좋음") + "</span></div>" +
+      '<div class="stat"><span>핀 도착</span><b>' + after.E.toFixed(1) + '<small>보드</small></b><span class="pill ' + pk[0] + '">' + pk[1] + "</span></div>" +
+      '<div class="stat"><span>브레이크포인트</span><b>' + after.bpBoard.toFixed(0) + '<small>보드</small></b><span class="pill" style="color:var(--muted)">' + after.bpFt.toFixed(0) + "ft 지점</span></div>" +
+      '<div class="stat"><span>훅 폭</span><b>' + after.H.toFixed(0) + '<small>보드</small></b><span class="pill" style="color:var(--muted)">' + (after.p > 2.3 ? "후반 날카로움" : after.p < 1.6 ? "부드러운 호" : "보통") + "</span></div>";
+    var paths = [];
+    if (before) paths.push({ sim: before, color: "var(--path0)", w: 2.5, op: 0.85 });
+    paths.push({ sim: after, color: "var(--accent)", w: 3.5 });
+    $("#mo-lane").innerHTML = laneSVG(paths, pr);
+    $("#mo-leg").innerHTML = before ? '<span><i style="background:var(--path0)"></i>지공 전 (스펙만)</span><span><i style="background:var(--accent)"></i>지공 후</span>'
+      : '<span><i style="background:var(--accent)"></i>예상 궤적</span><span><i style="background:transparent;border:2px solid var(--accent);width:12px;height:12px;border-radius:50%"></i>에임 스팟</span>';
+    var adv = [], d = after.E - 17.5;
+    if (after.gutter) adv.push("<b>거터 위험</b>이 있어요. 에임 스팟을 레인 안쪽으로 옮기거나 서는 위치를 바꿔보세요.");
+    if (Math.abs(d) > 1.2) adv.push("포켓에 맞추려면 서는 위치와 에임 스팟을 같이 <b>" + sideWord(-d) + "으로 약 " + Math.max(1, Math.round(Math.abs(d))) + "보드</b> 옮겨보세요.");
+    else adv.push("지금 설정이면 <b>포켓 근처</b>로 들어가요.");
+    if (after.entry < 3.5) adv.push("진입각이 얕아요. 포켓에 맞아도 7-10 같은 스플릿이 남기 쉬워요. 라인을 안쪽으로 옮기거나 표면을 바꿔 후반 힘을 남겨보세요.");
+    else if (after.entry > 6.5) adv.push("진입각이 큰 편이에요. 후반에 크게 꺾여 들어오니 볼이 일찍 반응하면 포켓을 넘어갈 수 있어요.");
+    else adv.push("진입각이 좋은 구간(보통 4~6°)이라 캐리가 잘 나오는 쪽이에요.");
+    if (before) {
+      var dl = after.bpFt - before.bpFt, dh = (after.H - before.H) / before.H * 100;
+      adv.push("지공 반영 결과: 브레이크포인트가 " + (Math.abs(dl) < 1 ? "거의 같고" : "<b>" + Math.abs(dl).toFixed(0) + "ft " + (dl > 0 ? "뒤로" : "앞으로") + "</b> 가고") + ", 훅 폭은 <b>" + (Math.abs(dh) < 2 ? "비슷해요" : Math.abs(dh).toFixed(0) + "% " + (dh > 0 ? "커져요" : "줄어요")) + "</b>.");
+    }
+    $("#mo-adv").innerHTML = adv.map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    var F = after.F, cov = F >= 0.9 ? "외피가 오일을 강하게 잡아 일찍 반응해요." : F >= 0.7 ? "외피 마찰이 중간 이상이라 무난하게 잡아요." : F >= 0.45 ? "외피가 매끄러운 편이라 길게 가요." : "외피 마찰이 낮아 직진에 가까워요.";
+    $("#mo-why").innerHTML = KEYS.map(function (k) { return "<li><b>" + LBL[k] + " " + ZN[zone(k, b[k])] + "</b> · " + SENT[k][zone(k, b[k])] + "</li>"; }).join("") +
+      "<li><b>외피 " + lookup(COVERS, b.cover)[1] + " · " + lookup(GRITS, b.grit)[1] + "</b> · " + cov + "</li>" +
+      axisSent().map(function (a) { return "<li><b>" + a[0] + "</b> · " + a[1] + "</li>"; }).join("");
+    save();
+  };
+
+  // ---------------- page: drill ----------------
+  var Dr = { built: false };
+  Dr.build = function () {
+    var p = $("#p-drill");
+    p.innerHTML =
+      '<div class="ph"><div><div class="sec">Layout</div><h2>지공 스펙</h2></div></div>' +
+      '<div id="dr-empty" class="card" hidden><p class="empty">마이볼 탭에서 볼을 먼저 추가해주세요.</p></div>' +
+      '<div id="dr-body" class="page">' +
+      '<div class="card"><div id="dr-pick"></div><div id="dr-main" style="margin-top:16px"></div></div>' +
+      '<div class="card" id="dr-cmpcard"><div class="card-h"><h3>지공 전 → 후 반응 비교</h3><span class="sec">Before · After</span></div><div id="dr-cmp"></div><ul class="advice" id="dr-why" style="margin-top:12px"></ul></div>' +
+      '<div class="card" id="dr-mapcard"><div class="card-h"><h3>스펙 지도에서 보기</h3><span class="sec">Spec → Drilled</span></div><div class="map" id="dr-map"></div>' +
+      '<p class="fn">빈 원이 제조사 스펙 위치, 파란 점이 지공 반응을 지도 기준으로 환산한 추정 위치예요. 지공해도 RG·Diff 숫자 자체는 거의 그대로이고, 바뀌는 건 실제 반응이에요.</p></div>' +
+      '<p class="fn" style="margin:0">레이아웃 효과는 일반적으로 알려진 경향을 단순화한 추정이에요. 정확한 판단은 프로샵 상담과 실제 투구로 확인하세요.</p></div>';
+    Dr.pick = ballPicker("dr-ball", function () { Dr.render(); });
+    $("#dr-pick").appendChild(Dr.pick);
+  };
+  function defLayout(fmt) { return fmt === "vls" ? { fmt: "vls", pinPap: 4.5, buffer: 2, mb: 4 } : { fmt: "da", drill: 45, pinPap: 4.5, val: 45 }; }
+  function lstr(L) {
+    return L.fmt === "vls" ? fracPlain(L.pinPap) + " × " + fracPlain(L.buffer) + " × " + fracPlain(L.mb)
+      : L.drill + "° × " + fracPlain(L.pinPap) + " × " + L.val + "°";
+  }
+  Dr.render = function () {
+    var b = selBall();
+    $("#dr-empty").hidden = !!b; $("#dr-body").hidden = !b;
+    if (!b) return;
+    Dr.pick.refresh();
+    var main = $("#dr-main");
+    main.innerHTML = "";
+    $("#dr-cmpcard").hidden = !b.layout; $("#dr-mapcard").hidden = !b.layout;
+    if (!b.layout) {
+      main.innerHTML = '<p class="notice">이 볼에는 아직 지공 정보가 없어요. 프로샵에서 받은 레이아웃 표기 형식을 골라 입력해보세요.</p>' +
+        '<div class="acts" style="margin-top:12px"><button type="button" class="btn pri" data-f="vls">VLS 형식으로 입력</button><button type="button" class="btn" data-f="da">듀얼 앵글로 입력</button></div>' +
+        '<p class="fn">VLS 예: 5 × 4½ × 2 (핀-PAP × 핀 버퍼 × MB-PAP) · 듀얼 앵글 예: 50° × 4½ × 40° (드릴 각 × 핀-PAP × VAL 각)</p>';
+      main.querySelectorAll("[data-f]").forEach(function (x) { x.addEventListener("click", function () { b.layout = defLayout(x.dataset.f); save(); Dr.render(); }); });
+      save();
+      return;
+    }
+    var L = b.layout;
+    var top = document.createElement("div");
+    top.innerHTML = '<div class="field"><span class="flabel">표기 형식</span><div id="dr-fmt"></div></div>' +
+      '<p class="lstr" id="dr-lstr"></p>' +
+      '<div class="stps three" id="dr-stps" style="margin-top:14px"></div>' +
+      '<div class="acts" style="margin-top:14px"><button type="button" class="btn ghost danger" id="dr-clear">지공 정보 지우기</button></div>';
+    main.appendChild(top);
+    $("#dr-fmt").appendChild(segmented([["vls", "VLS"], ["da", "듀얼 앵글"]], function () { return L.fmt; }, function (v) {
+      if (v !== L.fmt) { var keep = L.pinPap; b.layout = defLayout(v); b.layout.pinPap = keep; save(); Dr.render(); }
+    }, "표기 형식"));
+    var asym = b.asy >= 0.005;
+    var defs = L.fmt === "vls" ? [
+      { k: "pinPap", label: "핀-PAP 거리", sub: "인치", min: 0, max: 6.75, step: 0.125, dec: 3, ex: frac },
+      { k: "buffer", label: "핀 버퍼", sub: "인치", min: 0, max: 6, step: 0.125, dec: 3, ex: frac },
+      { k: "mb", label: "MB-PAP 거리", sub: asym ? "인치 · 비대칭 볼" : "인치 · 대칭이라 영향 작음", min: 0, max: 8, step: 0.125, dec: 3, ex: frac }
+    ] : [
+      { k: "drill", label: "드릴 각", sub: "도", min: 10, max: 90, step: 5, dec: 0, ex: function (v) { return v + "°"; } },
+      { k: "pinPap", label: "핀-PAP 거리", sub: "인치", min: 0, max: 6.75, step: 0.125, dec: 3, ex: frac },
+      { k: "val", label: "VAL 각", sub: "도", min: 10, max: 90, step: 5, dec: 0, ex: function (v) { return v + "°"; } }
+    ];
+    defs.forEach(function (d) {
+      $("#dr-stps").appendChild(stepper({ id: "dr-" + d.k, label: d.label, sub: d.sub, min: d.min, max: d.max, step: d.step, dec: d.dec,
+        get: function () { return L[d.k]; }, set: function (v) { L[d.k] = v; }, extra: d.ex, onChange: function () { Dr.update(); } }));
+    });
+    $("#dr-clear").addEventListener("click", function () {
+      var btn = $("#dr-clear");
+      if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.textContent = "한 번 더 누르면 지워져요"; return; }
+      b.layout = null; save(); Dr.render();
+    });
+    Dr.update();
+  };
+  Dr.update = function () {
+    var b = selBall(); if (!b || !b.layout) return;
+    var L = b.layout, pr = st.profile;
+    $("#dr-lstr").innerHTML = lstr(L) + "<small>" + (L.fmt === "vls" ? "핀-PAP × 핀 버퍼 × MB-PAP" : "드릴 각 × 핀-PAP × VAL 각") + "</small>";
+    var s0 = simulate(b, pr, false), s1 = simulate(b, pr, true);
+    function sharp(p) { return clamp((p - 1.1) / 2.1 * 100, 0, 100); }
+    var rows = [
+      { t: "길이 (브레이크포인트)", a: s0.bpFt, z: s1.bpFt, lo: 24, hi: 50, fmt: function (v) { return v.toFixed(0) + "ft"; }, ends: ["일찍", "길게"] },
+      { t: "훅 폭", a: s0.H, z: s1.H, lo: 3, hi: 17, fmt: function (v) { return v.toFixed(1) + "보드"; }, ends: ["작게", "크게"] },
+      { t: "후반 날카로움", a: sharp(s0.p), z: sharp(s1.p), lo: 0, hi: 100, fmt: function (v) { return v.toFixed(0); }, ends: ["부드럽게", "날카롭게"] }
+    ];
+    $("#dr-cmp").innerHTML = rows.map(function (r) {
+      function pc(v) { return clamp((v - r.lo) / (r.hi - r.lo) * 100, 0, 100); }
+      var a = pc(r.a), z = pc(r.z), l = Math.min(a, z), w = Math.abs(z - a);
+      return '<div class="cmp"><div class="cmp-h"><b>' + r.t + "</b><span>" + r.fmt(r.a) + " → <strong>" + r.fmt(r.z) + "</strong></span></div>" +
+        '<div class="db"><span class="tr"></span><span class="ln" style="left:' + l + "%;width:" + w + '%"></span><span class="d0" style="left:' + a + '%"></span><span class="d1" style="left:' + z + '%"></span></div>' +
+        '<div class="db-l"><span>' + r.ends[0] + "</span><span>" + r.ends[1] + "</span></div></div>";
+    }).join("") + '<div class="legend" style="justify-content:flex-start"><span><i style="background:var(--path0);height:10px;width:10px;border-radius:50%"></i>지공 전 (스펙만)</span><span><i style="background:var(--accent);height:10px;width:10px;border-radius:50%"></i>지공 후</span></div>';
+    var why = [], d = L.pinPap;
+    if (d < 3) why.push("<b>핀-PAP " + frac(d) + "</b> · 짧은 편이라 플레어가 작고, 일찍·부드럽게 구르는 쪽이에요.");
+    else if (d <= 4) why.push("<b>핀-PAP " + frac(d) + "</b> · 플레어가 가장 크게 나오는 구간(약 3⅜″ 근처)이라 총 훅이 커지는 쪽이에요.");
+    else if (d <= 5.5) why.push("<b>핀-PAP " + frac(d) + "</b> · 길이와 후반 반응이 균형 잡힌 쪽이에요.");
+    else why.push("<b>핀-PAP " + frac(d) + "</b> · 긴 편이라 길게 가다 후반에 반응하고, 플레어는 조금 줄어드는 쪽이에요.");
+    if (L.fmt === "vls") {
+      why.push("<b>핀 버퍼 " + frac(L.buffer) + "</b> · " + (L.buffer < 2 ? "짧은 편이라 반응 전환이 빠르고 각진 쪽이에요." : L.buffer >= 3 ? "긴 편이라 전환이 부드러운 쪽이에요." : "보통 범위예요."));
+      why.push("<b>MB-PAP " + frac(L.mb) + "</b> · " + (b.asy < 0.005 ? "이 볼은 대칭에 가까워서 MB 위치 영향이 작아요." : "비대칭 볼의 후반 반응 성격을 조절해요. 이 앱에서는 짧을수록 조금 더 날카롭게 계산해요."));
+    } else {
+      why.push("<b>드릴 각 " + L.drill + "°</b> · " + (L.drill < 40 ? "작은 편이라 일찍·부드럽게 반응하는 쪽이에요." : L.drill > 60 ? "큰 편이라 길게 가다 날카롭게 반응하는 쪽이에요." : "중간 범위예요."));
+      why.push("<b>VAL 각 " + L.val + "°</b> · " + (L.val < 40 ? "작은 편이라 반응 전환이 빠른 쪽이에요." : L.val > 60 ? "큰 편이라 전환이 부드러운 쪽이에요." : "중간 범위예요."));
+    }
+    $("#dr-why").innerHTML = why.map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    var fx = s1.fx, eff = { rg: clamp(b.rg + fx.len * 0.03, 2.43, 2.8), diff: clamp(b.diff * fx.flare, 0, 0.06) };
+    $("#dr-map").innerHTML = mapSVG([{ rg: b.rg, diff: b.diff, kind: "ring" }, { rg: eff.rg, diff: eff.diff, sel: true, num: idx(b), label: "지공 후 (추정)" }],
+      [{ from: { rg: b.rg, diff: b.diff }, to: eff }]);
+    save();
+  };
+
+  // ---------------- page: scores calendar ----------------
+  var DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  var Cal = { built: false };
+  Cal.build = function () {
+    var p = $("#p-scores");
+    p.innerHTML =
+      '<div class="ph"><div><div class="sec">Score log</div><h2>볼링 기록</h2></div><div class="count" id="sc-total"></div></div>' +
+      '<div class="calgrid">' +
+      '<div class="card"><div class="calnav y"><button type="button" id="cy-prev" aria-label="이전 해">‹</button><b id="cy"></b><button type="button" id="cy-next" aria-label="다음 해">›</button></div>' +
+      '<div class="calnav"><button type="button" id="cm-prev" aria-label="이전 달">‹</button><b id="cm"></b><button type="button" id="cm-next" aria-label="다음 달">›</button></div>' +
+      '<div class="dow">' + DOW.map(function (d) { return "<span>" + d + "</span>"; }).join("") + '</div><div class="days" id="cal-days"></div>' +
+      '<button type="button" class="lnk todaybtn" id="cal-today">오늘로</button></div>' +
+      '<div class="card avgc"><div class="sec">Average</div><div id="avg-mode"></div><div class="avgnum" id="avg-num"></div><div class="avgsub" id="avg-sub"></div></div>' +
+      "</div>" +
+      '<div class="card"><div class="card-h"><h3 id="g-title"></h3><span class="gsum" id="g-sum"></span></div>' +
+      '<ul class="glist" id="g-list"></ul>' +
+      '<div class="gadd"><div class="field"><label for="g-score">점수</label><input class="txt gscore" id="g-score" inputmode="numeric" autocomplete="off" placeholder="0~300"></div>' +
+      '<div class="field"><label for="g-ball">사용한 볼</label><select id="g-ball"></select></div>' +
+      '<button type="button" class="btn pri" id="g-add">게임 추가</button></div><p class="fn" id="g-msg" role="status"></p></div>' +
+      '<div class="card brag"><div class="card-h"><h3>자랑하기</h3><span class="sec">Share</span></div>' +
+      '<div id="br-mode"></div><p class="fn" id="br-hint"></p>' +
+      '<textarea class="txt brtxt" id="br-text" readonly rows="6" aria-label="자랑 문구"></textarea>' +
+      '<div class="acts" style="margin-top:10px"><button type="button" class="btn brand" id="br-copy">복사하기</button><button type="button" class="btn ghost" id="br-clear">고른 날짜 지우기</button></div>' +
+      '<p class="fn" id="br-msg" role="status"></p></div>' +
+      '<p class="fn" style="margin:0">기록은 이 폰 브라우저에만 저장돼요. 다른 사람은 볼 수 없어요.</p>';
+    var c = st.cal;
+    $("#cy-prev").onclick = function () { c.y--; Cal.update(); };
+    $("#cy-next").onclick = function () { c.y++; Cal.update(); };
+    $("#cm-prev").onclick = function () { c.m--; if (c.m < 0) { c.m = 11; c.y--; } Cal.update(); };
+    $("#cm-next").onclick = function () { c.m++; if (c.m > 11) { c.m = 0; c.y++; } Cal.update(); };
+    $("#cal-today").onclick = function () { var t = new Date(); c.y = t.getFullYear(); c.m = t.getMonth(); c.sel = ymd(t); Cal.update(); };
+    Cal.mode = segmented([["day", "일"], ["week", "주"], ["month", "월"], ["year", "년"]], function () { return c.mode; }, function (v) { c.mode = v; Cal.update(); }, "평균 기간");
+    Cal.mode.classList.add("sm");
+    $("#avg-mode").appendChild(Cal.mode);
+    $("#g-ball").addEventListener("change", function (e) { c.lastBall = +e.target.value; save(); });
+    function add() {
+      var t = $("#g-score").value.trim(), v = Number(t), msg = $("#g-msg");
+      if (t === "" || !/^\d+$/.test(t) || v > 300) { msg.textContent = "점수는 0~300 사이 숫자로 넣어주세요."; msg.style.color = "var(--bad)"; $("#g-score").focus(); return; }
+      st.games.push({ id: Date.now(), date: c.sel, score: v, ballId: +$("#g-ball").value || 0 });
+      msg.style.color = ""; msg.textContent = v + "점 기록했어요.";
+      $("#g-score").value = ""; $("#g-score").focus();
+      Cal.update();
+    }
+    $("#g-add").addEventListener("click", add);
+    $("#g-score").addEventListener("keydown", function (e) { if (e.key === "Enter") add(); });
+    if (!c.brag) c.brag = "period";
+    if (!Array.isArray(c.pick)) c.pick = [];
+    Cal.bmode = segmented([["period", "에버리지 기간 그대로"], ["pick", "날짜 직접 고르기"]], function () { return c.brag; }, function (v) { c.brag = v; Cal.update(); }, "자랑할 기록 고르기");
+    $("#br-mode").appendChild(Cal.bmode);
+    $("#br-clear").onclick = function () { c.pick = []; Cal.update(); };
+    $("#br-copy").onclick = function () {
+      var ta = $("#br-text"), t = ta.value, msg = $("#br-msg");
+      function done() { msg.style.color = "var(--good)"; msg.textContent = "복사했어요. 카톡 대화창에 붙여넣기 하세요."; }
+      function fail() { ta.focus(); ta.select(); msg.style.color = "var(--warn)"; msg.textContent = "자동 복사가 막혀 있어요. 선택된 글을 길게 눌러 복사해주세요."; }
+      try { navigator.clipboard.writeText(t).then(done, fail); } catch (e) { fail(); }
+    };
+  };
+  function gamesIn(a, b) { return st.games.filter(function (g) { return g.date >= a && g.date <= b; }); }
+  function ballName(id) { var b = st.balls.filter(function (x) { return x.id === id; })[0]; return b ? b.name : ""; }
+  Cal.update = function () {
+    var c = st.cal, y = c.y, m = c.m;
+    $("#cy").textContent = y + "년";
+    $("#cm").textContent = (m + 1) + "월";
+    $("#sc-total").innerHTML = "<b>" + st.games.length + "</b>게임";
+    Cal.mode.refresh();
+    var first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate(), lead = first.getDay(), today = ymd(new Date());
+    var counts = {};
+    st.games.forEach(function (g) { counts[g.date] = (counts[g.date] || 0) + 1; });
+    var box = $("#cal-days");
+    box.innerHTML = "";
+    for (var i = 0; i < lead; i++) { var e = document.createElement("span"); e.className = "day out"; box.appendChild(e); }
+    for (var d = 1; d <= days; d++) {
+      var key = y + "-" + pad2(m + 1) + "-" + pad2(d), bt = document.createElement("button");
+      bt.type = "button"; bt.textContent = d;
+      bt.className = "day" + (counts[key] ? " has" : "") + (key === today ? " today" : "") + (key === c.sel ? " sel" : "");
+      bt.setAttribute("aria-label", (m + 1) + "월 " + d + "일" + (counts[key] ? ", " + counts[key] + "게임" : ""));
+      bt.setAttribute("aria-pressed", String(key === c.sel));
+      if (c.brag === "pick" && c.pick.indexOf(key) >= 0) bt.className += " pick";
+      (function (k) { bt.onclick = function () {
+        if (c.brag === "pick") { var i = c.pick.indexOf(k); if (i >= 0) c.pick.splice(i, 1); else c.pick.push(k); }
+        else c.sel = k;
+        Cal.update();
+      }; })(key);
+      box.appendChild(bt);
+    }
+    // average
+    var sd = parseYmd(c.sel), a, b, label;
+    if (c.mode === "day") { a = b = c.sel; label = (sd.getMonth() + 1) + "월 " + sd.getDate() + "일"; }
+    else if (c.mode === "week") {
+      var s0 = new Date(sd.getFullYear(), sd.getMonth(), sd.getDate() - sd.getDay()), s6 = new Date(s0.getFullYear(), s0.getMonth(), s0.getDate() + 6);
+      a = ymd(s0); b = ymd(s6); label = (s0.getMonth() + 1) + "/" + s0.getDate() + " ~ " + (s6.getMonth() + 1) + "/" + s6.getDate();
+    } else if (c.mode === "month") { a = y + "-" + pad2(m + 1) + "-01"; b = y + "-" + pad2(m + 1) + "-31"; label = y + "년 " + (m + 1) + "월"; }
+    else { a = y + "-01-01"; b = y + "-12-31"; label = y + "년"; }
+    var gs = gamesIn(a, b), n = gs.length, sum = gs.reduce(function (t, g) { return t + g.score; }, 0);
+    var hi = gs.reduce(function (t, g) { return Math.max(t, g.score); }, 0);
+    $("#avg-num").innerHTML = n ? (sum / n).toFixed(1) : "—";
+    $("#avg-sub").innerHTML = "<span>" + label + "</span>" + (n ? "<span><b>" + n + "</b> 게임 · 하이 <b>" + hi + "</b></span>" : "<span>기록 없음</span>");
+    // selected day games
+    var dayGames = st.games.filter(function (g) { return g.date === c.sel; });
+    $("#g-title").textContent = (sd.getMonth() + 1) + "월 " + sd.getDate() + "일 (" + DOW[sd.getDay()] + ") 게임";
+    var ds = dayGames.reduce(function (t, g) { return t + g.score; }, 0);
+    $("#g-sum").innerHTML = dayGames.length ? "평균 <b>" + (ds / dayGames.length).toFixed(1) + "</b> · 합계 <b>" + ds + "</b>" : "";
+    var ul = $("#g-list");
+    ul.innerHTML = dayGames.length ? "" : '<li style="display:block"><p class="empty" style="padding:10px 0">이날 기록이 없어요. 아래에서 점수를 넣어보세요.</p></li>';
+    dayGames.forEach(function (g, i) {
+      var li = document.createElement("li");
+      li.innerHTML = '<span class="gno">' + (i + 1) + 'G</span><span class="gsc">' + g.score + '</span><span class="gball">' + (g.ballId && ballName(g.ballId) ? esc(ballName(g.ballId)) : "볼 미선택") + '</span><button type="button" class="gdel">삭제</button>';
+      var del = li.querySelector(".gdel");
+      del.addEventListener("click", function () {
+        if (!del.classList.contains("armed")) { del.classList.add("armed"); del.textContent = "한 번 더"; return; }
+        st.games = st.games.filter(function (x) { return x.id !== g.id; });
+        Cal.update();
+      });
+      ul.appendChild(li);
+    });
+    var sel = $("#g-ball");
+    sel.innerHTML = '<option value="0">볼 선택 안 함</option>' + st.balls.map(function (b2, i) { return '<option value="' + b2.id + '">' + (i + 1) + ". " + esc(b2.name) + "</option>"; }).join("");
+    sel.value = st.balls.some(function (b2) { return b2.id === c.lastBall; }) ? String(c.lastBall) : "0";
+    // brag text
+    Cal.bmode.refresh();
+    var bg, blabel;
+    if (c.brag === "pick") {
+      var pk = c.pick.slice().sort();
+      bg = st.games.filter(function (g) { return pk.indexOf(g.date) >= 0; });
+      blabel = pk.length ? pk.map(function (k) { var d = parseYmd(k); return (d.getMonth() + 1) + "/" + d.getDate(); }) : [];
+      blabel = blabel.length > 4 ? blabel.slice(0, 3).join(", ") + " 외 " + (blabel.length - 3) + "일" : blabel.join(", ");
+      $("#br-hint").textContent = "달력에서 자랑할 날짜를 눌러서 골라요 · " + pk.length + "일 선택됨 (주황 테두리)";
+    } else {
+      bg = gs; blabel = label;
+      $("#br-hint").textContent = "오른쪽 위 에버리지에서 고른 기간(" + label + ") 기록으로 만들어요.";
+    }
+    $("#br-clear").hidden = c.brag !== "pick";
+    bg = bg.slice().sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : x.id - y.id; });
+    var bn = bg.length, bs = bg.reduce(function (t, g) { return t + g.score; }, 0), bh = bg.reduce(function (t, g) { return Math.max(t, g.score); }, 0);
+    var names = []; bg.forEach(function (g) { var nm2 = g.ballId && ballName(g.ballId); if (nm2 && names.indexOf(nm2) < 0) names.push(nm2); });
+    var txt = bn ? ["🎳 Crazy Bowl-in 기록", blabel + " · " + bn + "게임"]
+      .concat(bn <= 12 ? [bg.map(function (g) { return g.score; }).join(" / ")] : [])
+      .concat(["에버 " + (bs / bn).toFixed(1) + " · 하이 " + bh + (bn > 1 ? " · 합계 " + bs : "")])
+      .concat(names.length ? ["볼: " + (names.length > 2 ? names.slice(0, 2).join(", ") + " 외 " + (names.length - 2) + "개" : names.join(", "))] : [])
+      .join("\n") : "";
+    $("#br-text").value = bn ? txt : (c.brag === "pick" ? "달력에서 기록이 있는 날짜를 골라주세요." : "이 기간에는 아직 기록이 없어요.");
+    $("#br-copy").disabled = !bn;
+    save();
+  };
+
+  // ---------------- routing ----------------
+  var PAGES = { myball: My, motion: Mo, drill: Dr, scores: Cal };
+  function show(scroll) {
+    var h = location.hash.replace("#", "");
+    if (!PAGES[h]) h = "myball";
+    Object.keys(PAGES).forEach(function (k) {
+      $("#p-" + k).hidden = k !== h;
+      $("#t-" + k).setAttribute("aria-current", k === h ? "page" : "false");
+    });
+    var pg = PAGES[h];
+    if (!pg.built) { pg.build(); pg.built = true; }
+    if (h === "drill") Dr.render(); else pg.update();
+    if (scroll) window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", function () { show(true); });
+  show(false);
+
+  // ---------------- splash ----------------
+  var sp = document.getElementById("splash");
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function closeSplash() { if (sp.hidden) return; sp.classList.add("out"); setTimeout(function () { sp.hidden = true; }, 380); }
+  if (reduce) sp.hidden = true; else { setTimeout(closeSplash, 1700); sp.addEventListener("click", closeSplash); }
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js").catch(function () {}); });
+}
+</script>
+</body>
+</html>
