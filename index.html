@@ -424,6 +424,15 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
 .ex-acts .btn{flex:1}
 .handrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--ink2)}
 .handrow b{color:var(--ink)}
+
+/* ---- v13: lane pattern ---- */
+.patrow{display:flex;gap:5px;align-items:center;border-top:1px solid var(--grid);padding-top:6px;margin-top:2px}
+.pat-l{flex:1;min-width:0;display:flex;gap:4px;align-items:center;font:inherit;font-size:11.5px;font-weight:600;color:var(--ink2);background:none;border:0;padding:4px 0;text-align:left;cursor:pointer;min-height:32px}
+.pat-l span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.patrow .btn.sm{min-height:32px;padding:4px 8px;flex:none}
+.pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pt-grid .wide{grid-column:1/-1}
+.pt-chips{display:flex;flex-wrap:wrap;gap:6px}
+.txt.found{border-color:var(--good);box-shadow:0 0 0 2px rgba(46,160,90,.18)}
 </style>
 
 <div id="splash" aria-hidden="true"><div class="spl">
@@ -620,15 +629,24 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     else { len += (L.drill - 45) / 45 * 0.8; ang += (L.drill - 45) / 45 * 0.4 + (45 - L.val) / 45 * 0.4; }
     return { flare: flare, len: clamp(len, -1.5, 1.5), ang: clamp(ang, -1, 1) };
   }
+  // oil length on a given board: center = pattern length, outside shorter by the ratio (crown shape)
+  function oilAt(P, L, bd) { var sh = clamp(1.1 - 0.11 * clamp(+P.ratio || 3, 1, 10), 0.35, 0.97), d = clamp((Math.abs(bd - 19.5) / 19.5 - 0.15) / 0.85, 0, 1); return L * (1 - (1 - sh) * Math.pow(d, 1.3)); } // flat top in the middle, stepping down outside
   function simulate(b, pr, useLayout) {
     var rgN = (b.rg - 2.43) / 0.37, dN = b.diff / 0.06, aN = b.asy / 0.03;
     var F = friction(b), mph = pr.speed / 1.609, rv = clamp((pr.rpm / mph - 14) / 10, -0.6, 1);
+    var PT = st.pattern, oil = pr.oil, backK = 1;
+    if (PT) { // pattern: oil on the ball's own board, more volume = less grip, early reverse-brush drop = stronger back end
+      var bd0 = (pr.stand - 5) + (pr.aim - (pr.stand - 5)) / 15 * (0.8 * pr.oil);
+      oil = oilAt(PT, pr.oil, bd0);
+      if (PT.vol) F = F * clamp(1 - (PT.vol - 24) / 60, 0.8, 1.15);
+      if (PT.drop) backK = 1 + clamp((pr.oil - PT.drop - 4) / 40, 0, 0.12);
+    }
     var fx = useLayout ? layoutFx(b) : { flare: 1, len: 0, ang: 0 }, sf = lookup(STYLES, pr.style)[3];
     var tiltN = (pr.tilt - 12) / 12, rotN = (pr.rot - 45) / 30;
     var hMul = (1 - 0.12 * tiltN) * (1 + 0.08 * rotN) * (1 - Math.max(0, (pr.rot - 70) / 20) * 0.35);
     var S = 0.42 * F + 0.28 * dN * fx.flare + 0.18 * rv + 0.12 * (1 - rgN);
-    var H = clamp((3 + 9 * S) * hMul + sf.h, 3, 18);
-    var bp = clamp(pr.oil - 5 * F - 3 * rv + 5 * rgN + 0.3 * (pr.speed - 26) + fx.len * 3 + tiltN * 2.5 + rotN * 2, 24, 50);
+    var H = clamp((3 + 9 * S) * hMul * backK + sf.h, 3, 18);
+    var bp = clamp(oil - 5 * F - 3 * rv + 5 * rgN + 0.3 * (pr.speed - 26) + fx.len * 3 + tiltN * 2.5 + rotN * 2, 24, 50);
     var p = clamp(1.4 + aN + 0.8 * (0.9 - F) + fx.ang * 0.8 + rotN * 0.3 + sf.p, 1.1, 3.4);
     var L0 = pr.stand - 5, m = (pr.aim - L0) / 15, pts = [];
     for (var f = 0; f <= 60.0001; f += 0.5) {
@@ -686,8 +704,30 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     s += '<rect x="' + (lx - 11) + '" y="' + top + '" width="11" height="' + (Bt - top) + '" rx="5.5" fill="var(--gutter)"/><rect x="' + (lx + lw) + '" y="' + top + '" width="11" height="' + (Bt - top) + '" rx="5.5" fill="var(--gutter)"/>';
     s += '<rect x="' + lx + '" y="' + top + '" width="' + lw + '" height="' + (bot - top) + '" fill="var(--lane)"/>';
     for (var i = 1; i < 39; i++) s += '<line x1="' + X(i) + '" y1="' + top + '" x2="' + X(i) + '" y2="' + bot + '" stroke="var(--laneLine)" stroke-opacity="' + (i % 5 === 0 ? 0.42 : 0.14) + '"/>';
-    s += '<rect x="' + lx + '" y="' + Y(pr.oil) + '" width="' + lw + '" height="' + (Y(0) - Y(pr.oil)) + '" fill="var(--oil)"/>';
-    s += '<text x="' + (lx + 4) + '" y="' + (Y(pr.oil) + 12) + '" font-size="10" fill="var(--ink2)">오일 ' + pr.oil + "ft</text>";
+    var PT = st.pattern;
+    if (PT) { // pattern in the app's own blue: light = forward oil, deeper = where reverse oil overlaps
+      var OL = pr.oil, wr = PT.rev && PT.drop ? clamp(0.35 + PT.rev / (PT.fwd || Math.max(1, (PT.vol || 24) - PT.rev)), 0.4, 0.95) : 0, bd, fP = "", rP = "";
+      for (bd = 1; bd <= 39; bd++) { // stepped board-by-board outline, like the sheet
+        var cc = bd - 0.5, fl = Math.round(oilAt(PT, OL, cc)), xa = X(bd - 1), xb = X(bd);
+        fP += (fP ? " L" : "M") + xa.toFixed(1) + " " + Y(fl).toFixed(1) + " L" + xb.toFixed(1) + " " + Y(fl).toFixed(1);
+        if (wr) { var q = Math.abs(cc - 19.5) / (19.5 * wr), rl = q <= 1 ? Math.round(Math.min(PT.drop, fl) * (1 - 0.35 * q * q * q)) : 0; rP += (rP ? " L" : "M") + xa.toFixed(1) + " " + Y(rl).toFixed(1) + " L" + xb.toFixed(1) + " " + Y(rl).toFixed(1); }
+      }
+      var base = " L" + X(39) + " " + Y(0) + " L" + X(0) + " " + Y(0) + "Z";
+      s += '<path d="' + fP + base + '" fill="var(--surface)" fill-opacity="0.55"/>'; // wash the wood first so the blue stays clean, not grey
+      s += '<path d="' + fP + base + '" fill="var(--accent)" fill-opacity="' + clamp(0.18 + ((PT.vol || 24) - 20) / 100, 0.16, 0.32).toFixed(2) + '"/>';
+      if (rP) s += '<path d="' + rP + base + '" fill="var(--accent)" fill-opacity="0.3"/>';
+      s += '<path d="' + fP + '" fill="none" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="1"/>';
+      var main0 = paths[paths.length - 1].sim, onRight = function (f) { var q = main0.pts.filter(function (z) { return z[0] >= f; })[0]; return q ? X(q[1]) > lx + lw / 2 : false; };
+      function tag(f, txt) { // small pill on the side away from the ball path
+        var left = onRight(f), w = txt.length * 5.6 + 10, x = left ? lx + 3 : lx + lw - 3 - w, y = Y(f) - 7;
+        return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="13" rx="6.5" fill="var(--surface)" fill-opacity="0.92" stroke="var(--line)"/><text x="' + (x + w / 2).toFixed(1) + '" y="' + (y + 9.5).toFixed(1) + '" text-anchor="middle" font-size="8.5" font-weight="600" fill="var(--ink2)">' + txt + "</text>";
+      }
+      if (PT.drop && PT.drop < OL) s += '<line x1="' + lx + '" y1="' + Y(PT.drop) + '" x2="' + (lx + lw) + '" y2="' + Y(PT.drop) + '" stroke="var(--accent)" stroke-dasharray="3 3" stroke-opacity=".7"/>' + tag(PT.drop, "리버스 " + PT.drop + "ft");
+      s += tag(OL, esc(String(PT.name || "패턴").slice(0, 14)) + " " + OL + "ft");
+    } else {
+      s += '<rect x="' + lx + '" y="' + Y(pr.oil) + '" width="' + lw + '" height="' + (Y(0) - Y(pr.oil)) + '" fill="var(--oil)"/>';
+      s += '<text x="' + (lx + 4) + '" y="' + (Y(pr.oil) + 12) + '" font-size="10" fill="var(--ink2)">오일 ' + pr.oil + "ft</text>";
+    }
     [5, 10, 15, 20, 25, 30, 35].forEach(function (bd) { var x = X(bd), y = Y(15); s += '<path d="M' + x + " " + (y - 7) + " L" + (x - 3.5) + " " + (y + 3) + " L" + (x + 3.5) + " " + (y + 3) + 'Z" fill="var(--ink2)" fill-opacity="0.6"/>'; });
     s += '<line x1="' + lx + '" y1="' + Y(0) + '" x2="' + (lx + lw) + '" y2="' + Y(0) + '" stroke="var(--ink)" stroke-width="2"/>';
     [5, 10, 15, 20, 25, 30, 35].forEach(function (bd) { s += '<circle cx="' + X(bd) + '" cy="' + (Bt + 30) + '" r="2.4" fill="var(--ink2)" fill-opacity="0.7"/>'; });
@@ -696,6 +736,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     s += '<path d="M' + X(pr.stand) + " " + (Bt + 12) + ' l-6 10 h12 z" fill="var(--brand)"/>';
     paths.forEach(function (p) {
       var d = p.sim.pts.filter(function (q) { return q[0] <= 58.5; }).map(function (q, i) { return (i ? "L" : "M") + X(q[1]).toFixed(1) + " " + Y(q[0]).toFixed(1); }).join(" ");
+      if (PT) s += '<path d="' + d + '" fill="none" stroke="var(--surface)" stroke-width="' + (p.w + 2.5) + '" stroke-opacity=".75" stroke-linecap="round" stroke-linejoin="round"/>';
       s += '<path d="' + d + '" fill="none" stroke="' + p.color + '" stroke-width="' + p.w + '" stroke-opacity="' + (p.op || 1) + '" stroke-linecap="round" stroke-linejoin="round"/>';
     });
     var main = paths[paths.length - 1].sim;
@@ -889,9 +930,15 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       range({ id: "mo-spd", label: "스피드", min: 15, max: 35, step: 0.5, get: function () { return pr.speed; }, set: function (v) { pr.speed = v; }, fmt: function (v) { return v.toFixed(1) + "<small>km/h</small>"; }, onChange: function () { Mo.update(true); } }),
       range({ id: "mo-std", nudge: true, label: "스탠스 (발)", min: 1, max: 40, step: 0.5, ticks: [5, 10, 15, 20, 25, 30, 35, 40], rtl: rtl, get: function () { return pr.stand; }, set: function (v) { pr.stand = v; }, fmt: function (v) { return bfmt(v) + "<small>보드</small>"; }, onChange: function () { Mo.update(true); } }),
       range({ id: "mo-aim", nudge: true, label: "에임 스팟 (15ft)", min: 1, max: 39, step: 0.5, ticks: [5, 10, 15, 20, 25, 30, 35], rtl: rtl, get: function () { return pr.aim; }, set: function (v) { pr.aim = v; }, fmt: function (v) { return bfmt(v) + "<small>보드</small>"; }, onChange: function () { Mo.update(true); } }),
-      range({ id: "mo-oil", label: "오일 길이", min: 32, max: 48, step: 1, get: function () { return pr.oil; }, set: function (v) { pr.oil = v; }, fmt: function (v) { return v + "<small>ft</small>"; }, onChange: function () { Mo.update(true); } })
+      range({ id: "mo-oil", label: "오일 길이", min: 28, max: 55, step: 1, get: function () { return pr.oil; }, set: function (v) { pr.oil = v; if (st.pattern) { st.pattern.len = v; st.pattern.edited = true; } }, fmt: function (v) { return v + "<small>ft</small>"; }, onChange: function () { Mo.update(true); } })
     ];
     Mo.ctrls.slice(1).forEach(function (r) { c.appendChild(r); });
+    var prow = document.createElement("div"); prow.className = "patrow";
+    prow.innerHTML = '<button type="button" class="pat-l" id="pat-open"><span aria-hidden="true">🛢</span><span id="pat-name"></span></button><button type="button" class="btn sm" id="pat-cam" aria-label="패턴표 사진으로 입력">📷</button><button type="button" class="btn sm" id="pat-edit">입력</button>';
+    c.appendChild(prow);
+    $("#pat-open").onclick = function () { openPattern(); };
+    $("#pat-edit").onclick = function () { openPattern(); };
+    $("#pat-cam").onclick = function () { openPattern(null, true); };
     Mo.tabs = segmented([["coach", "코치 메모"], ["why", "볼 성향"], ["drill", "지공 전후"]], function () { return st.ui.panel; }, function (v) { st.ui.panel = v; save(); Mo.update(); }, "아래 정보", "fill");
     $("#mo-tabs").appendChild(Mo.tabs);
     (function () {
@@ -914,6 +961,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
   Mo.update = function (fromSlider) {
     var b = selBall(), pr = st.profile;
     setTag();
+    var pn = $("#pat-name"); if (pn) pn.textContent = st.pattern ? patLabel(st.pattern) : "레인 패턴 없음 · 사진이나 입력으로 추가";
     var sel = $("#mo-ball");
     sel.innerHTML = st.balls.length ? st.balls.map(function (x, i) { return '<option value="' + x.id + '">' + (i + 1) + ". " + esc(x.name) + "</option>"; }).join("") : '<option value="">볼을 먼저 추가해주세요</option>';
     if (b) sel.value = String(b.id);
@@ -929,7 +977,8 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     var paths = []; if (before) paths.push({ sim: before, color: "var(--path0)", w: 2.5, op: 0.85 }); paths.push({ sim: after, color: "var(--accent)", w: 3.5 });
     $("#mo-lane").innerHTML = laneSVG(paths, pr);
     $("#mo-leg").innerHTML = (before ? '<span><i style="background:var(--path0)"></i>지공 전</span><span><i style="background:var(--accent)"></i>지공 후</span>' : '<span><i style="background:var(--accent)"></i>예상 궤적</span>') +
-      '<span><i style="background:var(--brand);height:8px;width:8px;border-radius:2px"></i>스탠스</span><span><i style="background:transparent;border:2px solid var(--accent);width:9px;height:9px;border-radius:50%"></i>에임</span>';
+      '<span><i style="background:var(--brand);height:8px;width:8px;border-radius:2px"></i>스탠스</span><span><i style="background:transparent;border:2px solid var(--accent);width:9px;height:9px;border-radius:50%"></i>에임</span>' +
+      (st.pattern ? '<span><i style="background:var(--accent);opacity:.3;height:8px;width:8px;border-radius:2px"></i>오일</span>' + (st.pattern.rev && st.pattern.drop ? '<span><i style="background:var(--accent);opacity:.55;height:8px;width:8px;border-radius:2px"></i>정+역방향</span>' : "") : "");
     var P = $("#mo-panel");
     if (st.ui.panel === "coach") {
       var adv = [], d = after.E - 17.5;
@@ -939,6 +988,11 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       if (after.entry < 3.5) adv.push("진입각이 얕아 7-10 같은 스플릿이 남기 쉬워요. 라인을 안쪽으로 옮기거나 표면을 바꿔 후반 힘을 남겨보세요.");
       else if (after.entry > 6.5) adv.push("진입각이 큰 편이라 일찍 반응하면 포켓을 넘어갈 수 있어요.");
       else adv.push("진입각이 좋은 구간(보통 4~6°)이라 캐리가 잘 나와요.");
+      if (st.pattern) {
+        var PT = st.pattern, rr = +PT.ratio || 0;
+        adv.push("<b>" + esc(PT.name || "레인 패턴") + "</b> · " + (rr ? (rr >= 5 ? "바깥이 말라 실수 여유가 큰 하우스형이에요. " : rr >= 2.5 ? "가운데와 바깥 차이가 적당해서 라인을 지키는 게 중요해요. " : "거의 평평한 스포츠형이라 정확도가 중요해요. ") : "") +
+          (PT.vol ? "오일 " + PT.vol + "mL로 " + (PT.vol >= 26 ? "많은 편이라 늦게 꺾여요." : PT.vol <= 20 ? "적은 편이라 일찍 꺾여요." : "보통이에요.") : ""));
+      }
       adv.push("예상 모델이라 실제 레인과 다를 수 있어요.");
       P.innerHTML = '<ul class="adv">' + adv.map(function (t) { return "<li>" + t + "</li>"; }).join("") + "</ul>";
     }
@@ -1746,6 +1800,129 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       $("#ex-yes").onclick = function () { var C = window.Capacitor; if (C && C.nativePromise) C.nativePromise("AppControl", "exit").catch(function () {}); else closeSheet(); };
     });
   });
+
+  // ================= lane pattern (oil sheet → length · volume · ratio) =================
+  if (!Array.isArray(st.patterns)) st.patterns = [];
+  var PF = [["name", "패턴 이름", "text", "예: WB Montreal"], ["len", "오일 길이 (ft)", "decimal", "41"], ["vol", "총 오일량 (mL)", "decimal", "26.89"], ["fwd", "정방향 오일 (mL)", "decimal", "21.005"], ["rev", "역방향 오일 (mL)", "decimal", "5.885"], ["drop", "리버스 브러시 드롭 (ft)", "decimal", "34"]];
+  function patLabel(P) { return (P.name || "패턴") + " · " + P.len + "ft" + (P.vol ? " · " + P.vol + "mL" : "") + (P.ratio ? " · " + P.ratio + ":1" : "") + (P.edited ? " · 길이 수동" : ""); }
+  var TESS = null;
+  function loadTess() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (TESS) return TESS;
+    TESS = new Promise(function (res, rej) {
+      var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+      s.onload = function () { res(window.Tesseract); };
+      s.onerror = function () { TESS = null; s.remove(); rej(new Error("글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.")); };
+      document.head.appendChild(s);
+    });
+    return TESS;
+  }
+  // upscale small screenshots/photos so the small print on the sheet is readable
+  function prepImage(file) {
+    return new Promise(function (res, rej) {
+      var u = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var sc = clamp(2200 / Math.max(im.width, im.height), 1, 2.5), c = document.createElement("canvas");
+        c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+        var g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(im, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(u); res(c);
+      };
+      im.onerror = function () { URL.revokeObjectURL(u); rej(new Error("사진을 열 수 없어요")); };
+      im.src = u;
+    });
+  }
+  function pnum(s) { if (s == null) return null; var v = parseFloat(String(s).replace(/,/g, ".").replace(/[^\d.]/g, "")); return isFinite(v) ? v : null; }
+  // reads a Kegel-style pattern sheet (FLEX / Kegel sheets) from OCR text
+  function parsePattern(text) {
+    var T = String(text || "").replace(/\r/g, ""), lines = T.split("\n"), o = {};
+    function grab(re) { var x = T.match(re); return x ? pnum(x[1]) : null; }
+    // OCR often turns "Oil" into "Oll"/"0il" and drops first letters, so the labels are matched loosely
+    o.len = grab(/Pattern\s*Dist\w*\D{0,14}(\d{2}(?:[.,]\d)?)/i) || grab(/\(\s*(\d{2})\s*['’`‘"]?\s*\)/) || grab(/pattern\s*\w{0,10}\s+(\d{2})\b/i);
+    // mL values sometimes lose their decimal point ("2689") — put it back where the value makes sense
+    function ml(re, lo, hi) { var x = T.match(re); if (!x) return null; var v = pnum(x[1]); if (/[.,]/.test(x[1]) || (v >= lo && v <= hi)) return v; for (var d = 10; d <= 1000; d *= 10) if (v / d >= lo && v / d <= hi) return +(v / d).toFixed(3); return null; }
+    o.fwd = ml(/orward\s*[O0]\w{1,2}\s*Total\D{0,10}(\d+(?:[.,]\d+)?)/i, 6, 40);
+    o.rev = ml(/everse\s*[O0]\w{1,2}\s*Total\D{0,10}(\d+(?:[.,]\d+)?)/i, 0.5, 20);
+    o.vol = ml(/olume\s*[O0]\w{1,2}\s*Total\D{0,10}(\d+(?:[.,]\d+)?)/i, 8, 45);
+    o.drop = grab(/Brush\s*Drop\D{0,10}(\d{2})/i);
+    var zl = lines.filter(function (l) { return /\bratio\b/i.test(l) && !/cleaner|buffer/i.test(l); })[0]; // (not "configuration")
+    if (zl) {
+      // "148" is a lost decimal point (1.48); outside:middle ratio = first/last value of the track-zone row
+      var ns = (zl.replace(/^.*ratio/i, "").match(/\d+(?:[.,]\d+)?/g) || []).map(function (t) { var v = pnum(t); return /[.,]/.test(t) ? v : v >= 100 ? v / 100 : v >= 20 ? v / 10 : v; }).filter(function (x) { return x && x < 20; });
+      var ends = [ns[0], ns[ns.length - 1]].filter(function (x) { return x >= 2; }); // outside:middle sits at both ends of the row
+      if (ends.length) o.ratio = Math.min.apply(null, ends);
+    }
+    var nl = lines.filter(function (l) { return /\(\s*\d{2}\s*['’`‘"]?\s*\)/.test(l); })[0];
+    if (nl) o.name = nl.replace(/^\s*\W*(FLE\S*)?\s*/i, "").replace(/\s*(K?EGEL\S*)?\s*$/i, "").replace(/\s{2,}/g, " ").trim().slice(0, 40);
+    // sanity: drop values the OCR obviously misread
+    if (o.len && (o.len < 25 || o.len > 60)) o.len = null;
+    if (o.vol && (o.vol < 5 || o.vol > 60)) o.vol = null;
+    if (o.fwd && o.fwd > 60) o.fwd = null;
+    if (o.rev && o.rev > 40) o.rev = null;
+    if (o.drop && (o.drop < 5 || o.drop > 60)) o.drop = null;
+    if (o.ratio && (o.ratio < 1 || o.ratio > 15)) o.ratio = null;
+    if (!o.vol && o.fwd != null && o.rev != null) o.vol = +(o.fwd + o.rev).toFixed(2);
+    if (o.rev == null && o.vol && o.fwd && o.vol > o.fwd) o.rev = +(o.vol - o.fwd).toFixed(3);
+    if (o.fwd == null && o.vol && o.rev && o.vol > o.rev) o.fwd = +(o.vol - o.rev).toFixed(3);
+    Object.keys(o).forEach(function (k) { if (o[k] == null || o[k] === "") delete o[k]; });
+    return o;
+  }
+  function openPattern(pre, photo) {
+    var pr = st.profile, P = Object.assign({}, st.pattern || {}, pre || {});
+    openSheet("🛢 레인 패턴", function (body) {
+      body.innerHTML = '<div class="acts"><button type="button" class="btn brand" id="pt-photo">📷 패턴표 사진</button><input type="file" id="pt-file" accept="image/*" hidden></div>' +
+        '<p class="fn" id="pt-msg" role="status">케겔 패턴표처럼 숫자가 적힌 표를 찍거나 불러오면 아래 칸을 자동으로 채워요. 읽은 값은 확인한 뒤 적용하세요.</p>' +
+        (st.patterns.length ? '<div class="field"><span class="flabel">저장된 패턴</span><div class="pt-chips">' + st.patterns.map(function (q, i) { return '<button type="button" class="chipbtn" data-i="' + i + '">' + esc(q.name || "패턴") + " " + q.len + "ft</button>"; }).join("") + "</div></div>" : "") +
+        '<div class="pt-grid">' + PF.map(function (f) { return '<div class="field' + (f[0] === "name" ? " wide" : "") + '"><label class="flabel" for="pt-' + f[0] + '">' + f[1] + '</label><input class="txt" id="pt-' + f[0] + '" inputmode="' + (f[2] === "text" ? "text" : "decimal") + '" autocomplete="off" placeholder="' + f[3] + '"></div>'; }).join("") + "</div>" +
+        '<p class="fn" id="pt-ratio"></p>' +
+        '<div class="acts"><button type="button" class="btn pri" id="pt-apply">적용</button>' + (st.pattern ? '<button type="button" class="btn ghost danger" id="pt-off">패턴 끄기</button>' : "") + "</div>";
+      var msg = $("#pt-msg"), ratio = P.ratio || null;
+      function paintRatio() { $("#pt-ratio").innerHTML = ratio ? "바깥:가운데 비율 <b>" + ratio + ":1</b> · 패턴표 사진에서 자동으로 읽은 값이에요." : "바깥:가운데 비율은 패턴표 사진을 넣으면 자동으로 읽어요. 몰라도 괜찮아요."; }
+      function fill(o) { PF.forEach(function (f) { var v = o[f[0]]; if (v != null && v !== "") $("#pt-" + f[0]).value = v; }); if (o.ratio) ratio = o.ratio; paintRatio(); }
+      fill(P);
+      $$(".pt-chips [data-i]", body).forEach(function (bt) { bt.onclick = function () { fill(st.patterns[+bt.dataset.i]); }; });
+      $("#pt-photo").onclick = function () { $("#pt-file").click(); };
+      $("#pt-file").addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
+        msg.style.color = ""; msg.textContent = "글자 인식 도구 불러오는 중… (처음 한 번 약 15MB, 인터넷 필요)";
+        var STAGE = { "loading tesseract core": "인식 엔진 받는 중…", "initializing tesseract": "인식 엔진 준비 중…", "loading language traineddata": "영어 글자 데이터 받는 중…", "initializing api": "인식 준비 중…" }, last = Date.now(), done = false;
+        var dog = setInterval(function () { if (done) return clearInterval(dog); if (Date.now() - last > 45000) { clearInterval(dog); msg.style.color = "var(--bad)"; msg.textContent = "응답이 없어요. 인터넷 연결을 확인하고 다시 눌러주세요. (" + msg.textContent + ")"; } }, 3000);
+        var TS = null, CV = null;
+        Promise.all([loadTess(), prepImage(f)]).then(function (r) {
+          TS = r[0]; CV = r[1];
+          return r[0].recognize(r[1], "eng", { logger: function (m) { last = Date.now(); msg.textContent = m.status === "recognizing text" ? "패턴표 읽는 중… " + Math.round(m.progress * 100) + "%" : (STAGE[m.status] || m.status) + (m.progress && m.progress < 1 ? " " + Math.round(m.progress * 100) + "%" : ""); } });
+        }).then(function (res) {
+          var o = parsePattern(res && res.data && res.data.text);
+          if (o.name) return o;
+          // big bold title is often skipped on the full page: read the top band on its own
+          msg.textContent = "패턴 이름 읽는 중…";
+          var h = Math.round(CV.height * 0.09), t = document.createElement("canvas"); t.width = Math.round(CV.width * 0.7); t.height = h;
+          t.getContext("2d").drawImage(CV, CV.width * 0.15, 0, t.width, h, 0, 0, t.width, h);
+          return TS.recognize(t, "eng").then(function (r2) {
+            var ln = String(r2 && r2.data && r2.data.text || "").split("\n").map(function (x) { return x.trim(); }).filter(function (x) { return /[A-Za-z]{3}/.test(x) && !/built|bowling|distance|brush|total|tank|forward|reverse|volume|board|conditioner/i.test(x); }).sort(function (a, b) { return b.length - a.length; })[0];
+            if (ln) o.name = ln.replace(/^\W*(FLE\S*)?\s*/i, "").replace(/^[A-Za-z|]\s+/, "").replace(/\s*(K?EGEL\S*)?\s*$/i, "").replace(/[|\[\]{}]/g, "").trim().slice(0, 40);
+            return o;
+          }, function () { return o; });
+        }).finally(function () { done = true; }).then(function (o) {
+          var got = PF.filter(function (x) { return o[x[0]] != null; }).length + (o.ratio ? 1 : 0);
+          fill(o); PF.forEach(function (x) { $("#pt-" + x[0]).classList.toggle("found", o[x[0]] != null); });
+          msg.style.color = got >= 3 ? "var(--good)" : "var(--warn)";
+          msg.textContent = got ? got + "개 항목을 읽었어요. 초록 칸을 확인하고, 틀린 값은 고친 뒤 적용하세요." : "숫자를 읽지 못했어요. 표가 화면에 꽉 차게 똑바로 다시 찍거나 직접 입력해주세요.";
+        }).catch(function (err) { msg.style.color = "var(--bad)"; msg.textContent = String(err && err.message || err); });
+      });
+      $("#pt-apply").onclick = function () {
+        var o = {}; PF.forEach(function (f) { var v = $("#pt-" + f[0]).value.trim(); o[f[0]] = f[0] === "name" ? v.slice(0, 40) : pnum(v); });
+        o.ratio = ratio;
+        if (!o.len || o.len < 25 || o.len > 60) { msg.style.color = "var(--bad)"; msg.textContent = "오일 길이(25~60ft)를 넣어주세요."; $("#pt-len").focus(); return; }
+        if (!o.vol && o.fwd && o.rev) o.vol = +(o.fwd + o.rev).toFixed(2);
+        Object.keys(o).forEach(function (k) { if (o[k] == null || o[k] === "") delete o[k]; });
+        st.pattern = o; pr.oil = Math.round(clamp(o.len, 28, 55));
+        if (o.name) { st.patterns = st.patterns.filter(function (q) { return q.name !== o.name; }); st.patterns.unshift(Object.assign({}, o)); st.patterns = st.patterns.slice(0, 12); }
+        save(); closeSheet(); Mo.update();
+      };
+      var off = $("#pt-off"); if (off) off.onclick = function () { st.pattern = null; save(); closeSheet(); Mo.update(); };
+      if (photo) $("#pt-file").click();
+    });
+  }
 
   // ================= routing =================
   var PAGES = { my: My, motion: Mo, scores: Cal };
