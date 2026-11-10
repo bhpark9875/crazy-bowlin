@@ -431,8 +431,16 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
 .pat-l span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .patrow .btn.sm{min-height:32px;padding:4px 8px;flex:none}
 .pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pt-grid .wide{grid-column:1/-1}
-.pt-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pt-chips{display:flex;flex-wrap:wrap;gap:6px}.pt-acts .btn{flex:1}.ptc{display:inline-flex;align-items:center}.ptc .chipbtn{border-radius:999px 0 0 999px;border-right:0}.ptx{font:inherit;font-size:14px;line-height:1;min-height:30px;padding:0 9px;border:1px solid var(--line);border-radius:0 999px 999px 0;background:var(--surface2);color:var(--muted);cursor:pointer}
 .txt.found{border-color:var(--good);box-shadow:0 0 0 2px rgba(46,160,90,.18)}
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.plist li{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 10px;background:var(--surface2)}
+.plist li.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.pl-main{flex:1;min-width:0;display:grid;gap:1px;text-align:left;font:inherit;background:none;border:0;padding:4px 0;color:var(--ink);cursor:pointer;min-height:40px}
+.pl-main b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-main span{font-size:11.5px;color:var(--muted)}
+.pl-on{font-size:10.5px;font-weight:700;color:var(--accent);margin-left:4px}
+.ptx.pl-x{border-radius:999px;min-width:32px;min-height:32px}.ptx.armed{color:var(--bad);border-color:var(--bad);font-size:11px;padding:0 8px}
 </style>
 
 <div id="splash" aria-hidden="true"><div class="spl">
@@ -934,11 +942,11 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     ];
     Mo.ctrls.slice(1).forEach(function (r) { c.appendChild(r); });
     var prow = document.createElement("div"); prow.className = "patrow";
-    prow.innerHTML = '<button type="button" class="pat-l" id="pat-open"><span aria-hidden="true">🛢</span><span id="pat-name"></span></button><button type="button" class="btn sm" id="pat-cam" aria-label="패턴표 사진으로 입력">📷</button><button type="button" class="btn sm" id="pat-edit">입력</button>';
+    prow.innerHTML = '<button type="button" class="pat-l" id="pat-open"><span aria-hidden="true">🛢</span><span id="pat-name"></span></button><button type="button" class="btn sm" id="pat-cam" aria-label="패턴표 사진으로 입력">📷</button><button type="button" class="btn sm" id="pat-edit">불러오기</button>';
     c.appendChild(prow);
-    $("#pat-open").onclick = function () { openPattern(); };
-    $("#pat-edit").onclick = function () { openPattern(); };
-    $("#pat-cam").onclick = function () { openPattern(null, true); };
+    $("#pat-open").onclick = openPatternList;
+    $("#pat-edit").onclick = openPatternList;
+    $("#pat-cam").onclick = function () { openPattern({}, true); };
     Mo.tabs = segmented([["coach", "코치 메모"], ["why", "볼 성향"], ["drill", "지공 전후"]], function () { return st.ui.panel; }, function (v) { st.ui.panel = v; save(); Mo.update(); }, "아래 정보", "fill");
     $("#mo-tabs").appendChild(Mo.tabs);
     (function () {
@@ -1365,7 +1373,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       var base = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@" + MPV;
       M.ld = import(base + "/vision_bundle.mjs").then(function (V) {
         return V.FilesetResolver.forVisionTasks(base + "/wasm").then(function (fs) {
-          function opt(dg) { return { baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_" + kind + "/float16/1/pose_landmarker_" + kind + ".task", delegate: dg }, runningMode: "VIDEO", numPoses: 1, minPoseDetectionConfidence: 0.3, minPosePresenceConfidence: 0.3, minTrackingConfidence: 0.3 }; }
+          function opt(dg) { return { baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_" + kind + "/float16/1/pose_landmarker_" + kind + ".task", delegate: dg }, runningMode: "VIDEO", numPoses: 3, minPoseDetectionConfidence: 0.3, minPosePresenceConfidence: 0.3, minTrackingConfidence: 0.3 }; }
           return V.PoseLandmarker.createFromOptions(fs, opt("GPU")).catch(function () { return V.PoseLandmarker.createFromOptions(fs, opt("CPU")); });
         });
       }).then(function (p) { M.pl = p; return p; });
@@ -1421,6 +1429,8 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       if (got < Math.max(6, F.length * 0.3)) return { err: "사람을 충분히 찾지 못했어요.", cover: Math.round(got / Math.max(1, F.length) * 100) };
       function ser(n) { return med3(rows.map(function (r) { return r && r[n] != null ? r[n] : null; })); }
       var sw = ser("swing"), kn = ser("knee"), to = ser("torso"), i, j, rel = -1, top = -1, best = -1e9;
+      function span(a) { a = a.filter(function (x) { return x != null; }); return a.length ? Math.max.apply(null, a) - Math.min.apply(null, a) : 0; }
+      if (span(sw) < 30 && span(kn) < 20) return { err: "투구 동작이 보이지 않아요.", cover: Math.round(got / F.length * 100) }; // a print or a still figure doesn't swing or bend
       // one throw = an arm-swing peak followed within 2s by the deepest slide-knee bend (skips waiting/walking parts of long clips)
       for (i = 1; i < F.length - 1; i++) {
         if (sw[i] == null || sw[i] < 50) continue;
@@ -1516,6 +1526,29 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
         return c.toDataURL("image/jpeg", 0.8);
       });
     }
+    // shirt prints / posters can look like a person: keep only body-shaped poses and follow the same person frame to frame
+    function plaus(L, W, H) {
+      function d(a, b) { return Math.hypot((a[0] - b[0]) * W, (a[1] - b[1]) * H); }
+      var key = [0, 11, 12, 23, 24, 25, 26, 27, 28], n = key.filter(function (i) { return L[i][2] > VIS; }).length;
+      var ms = [(L[11][0] + L[12][0]) / 2, (L[11][1] + L[12][1]) / 2], mh = [(L[23][0] + L[24][0]) / 2, (L[23][1] + L[24][1]) / 2], torso = d(ms, mh);
+      var legs = [[23, 27], [24, 28]].filter(function (q) { return L[q[0]][2] > VIS && L[q[1]][2] > VIS; }).map(function (q) { return d(L[q[0]], L[q[1]]); });
+      var sc = n;
+      if (!torso) return -9;
+      if (legs.length) { var r = avg(legs) / torso; sc += r >= 0.9 && r <= 2.8 ? 3 : -6; } // real legs ≈ 1.2–2.2× the torso
+      else sc -= 3; // no legs at all = not a full body
+      var ys = L.filter(function (p) { return p[2] > VIS; }).map(function (p) { return p[1]; });
+      if (ys.length && Math.max.apply(null, ys) - Math.min.apply(null, ys) < 0.12) sc -= 3; // a tiny figure, e.g. a print or logo
+      return sc;
+    }
+    function pickPose(list, prev, W, H) {
+      var best = null, bs = -1e9;
+      (list || []).forEach(function (lm) {
+        var L = lm.map(function (p) { return [p.x, p.y, p.visibility == null ? 1 : p.visibility]; }), sc = plaus(L, W, H);
+        if (prev) sc -= Math.hypot((L[23][0] + L[24][0] - prev[23][0] - prev[24][0]) / 2, (L[23][1] + L[24][1] - prev[23][1] - prev[24][1]) / 2) * 12; // stay with the same person
+        if (sc > bs) { bs = sc; best = L; }
+      });
+      return best && bs >= 6 ? best : null;
+    }
     function pass(v, pl, M, enh, onProg, label) {
       var dur = v.duration, step = Math.max(1 / 15, dur / 450), n = Math.floor(dur / step), F = [], i = 0;
       function next() {
@@ -1523,8 +1556,8 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
         var t = Math.min(i * step, Math.max(0, dur - 0.02));
         return seek(v, t).then(function () {
           var res = null; try { res = pl.detectForVideo(enh ? enhanced(v) : v, M.ts + Math.round(t * 1000)); } catch (e) {}
-          var lm = res && res.landmarks && res.landmarks[0];
-          F.push({ t: t, lm: lm ? lm.map(function (p) { return [p.x, p.y, p.visibility == null ? 1 : p.visibility]; }) : null });
+          var prevL = null; for (var j = F.length - 1; j >= 0 && j >= F.length - 8; j--) if (F[j].lm) { prevL = F[j].lm; break; }
+          F.push({ t: t, lm: pickPose(res && res.landmarks, prevL, v.videoWidth || 1, v.videoHeight || 1) });
           i++; onProg(i / (n + 1), label + " " + Math.round(i / (n + 1) * 100) + "%");
           return next();
         });
@@ -1547,7 +1580,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
           var m2 = metrics(F2, v.videoWidth, v.videoHeight, hand);
           if (!m2.err && (m.err || m2.cover >= m.cover)) return { F: F2, m: m2 };
           if (!m.err) return { F: F, m: m };
-          throw new Error(m2.err + " 밝은 배경 앞에서, 머리부터 발까지 화면 높이의 절반 이상 차게 찍어주세요.");
+          throw new Error(m2.err + " 옷 무늬나 그림은 사람으로 치지 않아요. 밝은 곳에서 머리부터 발까지 몸 전체가 나오게, 조금 떨어져서 찍어주세요.");
         });
       }).then(function (R) {
         var F = R.F, m = R.m, k = sides(m.hand), shots = [];
@@ -1844,7 +1877,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     o.rev = ml(/everse\s*[O0]\w{1,2}\s*Total\D{0,10}(\d+(?:[.,]\d+)?)/i, 0.5, 20);
     o.vol = ml(/olume\s*[O0]\w{1,2}\s*Total\D{0,10}(\d+(?:[.,]\d+)?)/i, 8, 45);
     o.drop = grab(/Brush\s*Drop\D{0,10}(\d{2})/i);
-    var zl = lines.filter(function (l) { return /\bratio\b/i.test(l) && !/cleaner|buffer/i.test(l); })[0]; // (not "configuration")
+    var zl = lines.filter(function (l) { return /zone\s*ratio/i.test(l); })[0] || lines.filter(function (l) { return /\bratio\b/i.test(l) && !/cleaner|buffer/i.test(l); })[0]; // "TrackZoneRatio" may lose its spaces; skip "configuration"
     if (zl) {
       // "148" is a lost decimal point (1.48); outside:middle ratio = first/last value of the track-zone row
       var ns = (zl.replace(/^.*ratio/i, "").match(/\d+(?:[.,]\d+)?/g) || []).map(function (t) { var v = pnum(t); return /[.,]/.test(t) ? v : v >= 100 ? v / 100 : v >= 20 ? v / 10 : v; }).filter(function (x) { return x && x < 20; });
@@ -1866,22 +1899,53 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     Object.keys(o).forEach(function (k) { if (o[k] == null || o[k] === "") delete o[k]; });
     return o;
   }
-  function openPattern(pre, photo) {
-    var pr = st.profile, P = Object.assign({}, st.pattern || {}, pre || {});
+  // saved patterns: tap to load, 수정 to edit, × (twice) to delete
+  function usePattern(q) { st.pattern = Object.assign({}, q); delete st.pattern.edited; st.profile.oil = Math.round(clamp(q.len, 28, 55)); save(); closeSheet(); Mo.update(); }
+  function openPatternList() {
     openSheet("🛢 레인 패턴", function (body) {
-      body.innerHTML = '<div class="acts"><button type="button" class="btn brand" id="pt-photo">📷 패턴표 사진</button><input type="file" id="pt-file" accept="image/*" hidden></div>' +
+      function draw() {
+        var cur = st.pattern;
+        body.innerHTML = '<div class="acts pt-acts"><button type="button" class="btn brand" id="pl-cam">📷 새 패턴 찍기</button><button type="button" class="btn" id="pl-new">✎ 직접 입력</button></div>' +
+          '<div class="sec">저장된 패턴 ' + st.patterns.length + "개</div>" +
+          (st.patterns.length ? '<ul class="plist">' + st.patterns.map(function (q, i) {
+            var on = !!(cur && cur.name === q.name);
+            return '<li' + (on ? ' class="on"' : "") + '><button type="button" class="pl-main" data-i="' + i + '" aria-label="' + esc(q.name) + ' 불러오기"><b>' + esc(q.name || "패턴") + (on ? ' <span class="pl-on">적용 중</span>' : "") + "</b><span>" + q.len + "ft" + (q.vol ? " · " + q.vol + "mL" : "") + (q.ratio ? " · " + q.ratio + ":1" : "") + (q.drop ? " · 리버스 " + q.drop + "ft" : "") + '</span></button><button type="button" class="btn sm" data-e="' + i + '">수정</button><button type="button" class="ptx pl-x" data-x="' + i + '" aria-label="' + esc(q.name) + ' 삭제">×</button></li>';
+          }).join("") + "</ul>" : '<p class="empty">아직 저장된 패턴이 없어요. 패턴표를 찍거나 직접 입력하면 여기에 쌓여요.</p>') +
+          (cur ? '<button type="button" class="btn ghost danger" id="pl-off">패턴 끄기 (기본 레인으로)</button>' : "") +
+          '<p class="fn">패턴은 이 폰에만 저장돼요. 볼링장 패턴표를 한 번 찍어두면 다음엔 여기서 바로 골라요.</p>';
+        $("#pl-cam").onclick = function () { openPattern({}, true); };
+        $("#pl-new").onclick = function () { openPattern({ name: "", len: "", vol: "", fwd: "", rev: "", drop: "", ratio: null }); };
+        $$("[data-i]", body).forEach(function (b) { b.onclick = function () { usePattern(st.patterns[+b.dataset.i]); }; });
+        $$("[data-e]", body).forEach(function (b) { b.onclick = function () { openPattern(st.patterns[+b.dataset.e]); }; });
+        $$("[data-x]", body).forEach(function (b) {
+          b.onclick = function () {
+            if (!b.classList.contains("armed")) { b.classList.add("armed"); b.textContent = "삭제?"; return; }
+            var q = st.patterns[+b.dataset.x]; st.patterns.splice(+b.dataset.x, 1);
+            if (st.pattern && q && st.pattern.name === q.name) st.pattern = null;
+            save(); draw(); Mo.update();
+          };
+        });
+        var off = $("#pl-off"); if (off) off.onclick = function () { st.pattern = null; save(); closeSheet(); Mo.update(); };
+      }
+      draw();
+    });
+  }
+  function openPattern(pre, photo) {
+    var pr = st.profile, P = pre ? Object.assign({}, pre) : Object.assign({}, st.pattern || {});
+    openSheet("🛢 레인 패턴", function (body) {
+      body.innerHTML = '<div class="acts pt-acts"><button type="button" class="btn brand" id="pt-photo">📷 바로 찍기</button><button type="button" class="btn" id="pt-album">🖼 앨범에서</button><input type="file" id="pt-cam" accept="image/*" capture="environment" hidden><input type="file" id="pt-file" accept="image/*" hidden></div>' +
         '<p class="fn" id="pt-msg" role="status">케겔 패턴표처럼 숫자가 적힌 표를 찍거나 불러오면 아래 칸을 자동으로 채워요. 읽은 값은 확인한 뒤 적용하세요.</p>' +
-        (st.patterns.length ? '<div class="field"><span class="flabel">저장된 패턴</span><div class="pt-chips">' + st.patterns.map(function (q, i) { return '<button type="button" class="chipbtn" data-i="' + i + '">' + esc(q.name || "패턴") + " " + q.len + "ft</button>"; }).join("") + "</div></div>" : "") +
         '<div class="pt-grid">' + PF.map(function (f) { return '<div class="field' + (f[0] === "name" ? " wide" : "") + '"><label class="flabel" for="pt-' + f[0] + '">' + f[1] + '</label><input class="txt" id="pt-' + f[0] + '" inputmode="' + (f[2] === "text" ? "text" : "decimal") + '" autocomplete="off" placeholder="' + f[3] + '"></div>'; }).join("") + "</div>" +
         '<p class="fn" id="pt-ratio"></p>' +
-        '<div class="acts"><button type="button" class="btn pri" id="pt-apply">적용</button>' + (st.pattern ? '<button type="button" class="btn ghost danger" id="pt-off">패턴 끄기</button>' : "") + "</div>";
+        '<div class="acts"><button type="button" class="btn pri" id="pt-apply">저장하고 적용</button>' + (st.pattern ? '<button type="button" class="btn ghost danger" id="pt-off">패턴 끄기</button>' : "") + "</div>";
       var msg = $("#pt-msg"), ratio = P.ratio || null;
       function paintRatio() { $("#pt-ratio").innerHTML = ratio ? "바깥:가운데 비율 <b>" + ratio + ":1</b> · 패턴표 사진에서 자동으로 읽은 값이에요." : "바깥:가운데 비율은 패턴표 사진을 넣으면 자동으로 읽어요. 몰라도 괜찮아요."; }
       function fill(o) { PF.forEach(function (f) { var v = o[f[0]]; if (v != null && v !== "") $("#pt-" + f[0]).value = v; }); if (o.ratio) ratio = o.ratio; paintRatio(); }
+      body.insertAdjacentHTML("afterbegin", '<button type="button" class="lnk vw-back" id="pt-list">‹ 저장된 패턴 목록</button>'); $("#pt-list").onclick = openPatternList;
       fill(P);
-      $$(".pt-chips [data-i]", body).forEach(function (bt) { bt.onclick = function () { fill(st.patterns[+bt.dataset.i]); }; });
-      $("#pt-photo").onclick = function () { $("#pt-file").click(); };
-      $("#pt-file").addEventListener("change", function (e) {
+      $("#pt-photo").onclick = function () { $("#pt-cam").click(); };
+      $("#pt-album").onclick = function () { $("#pt-file").click(); };
+      function onPick(e) {
         var f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
         msg.style.color = ""; msg.textContent = "글자 인식 도구 불러오는 중… (처음 한 번 약 15MB, 인터넷 필요)";
         var STAGE = { "loading tesseract core": "인식 엔진 받는 중…", "initializing tesseract": "인식 엔진 준비 중…", "loading language traineddata": "영어 글자 데이터 받는 중…", "initializing api": "인식 준비 중…" }, last = Date.now(), done = false;
@@ -1893,34 +1957,54 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
         }).then(function (res) {
           var o = parsePattern(res && res.data && res.data.text);
           if (o.name) return o;
-          // big bold title is often skipped on the full page: read the top band on its own
+          // the big title sits just above the "Oil Pattern Distance" row: crop that strip, drop red pen marks, binarize, read it alone
           msg.textContent = "패턴 이름 읽는 중…";
-          var h = Math.round(CV.height * 0.09), t = document.createElement("canvas"); t.width = Math.round(CV.width * 0.7); t.height = h;
-          t.getContext("2d").drawImage(CV, CV.width * 0.15, 0, t.width, h, 0, 0, t.width, h);
+          var rows = (res && res.data && res.data.lines) || [], anchor = null;
+          rows.forEach(function (l) { if (/pattern|brush|per\s*board|distance/i.test(l.text) && l.bbox && (!anchor || l.bbox.y0 < anchor.y0)) anchor = l.bbox; });
+          var yb = anchor ? anchor.y0 - 4 : Math.round(CV.height * 0.085), ya = Math.max(0, yb - Math.round(CV.height * 0.075)), hh = Math.max(20, yb - ya);
+          var t = document.createElement("canvas"); t.width = Math.round(CV.width * 0.64); t.height = hh;
+          var tg = t.getContext("2d", { willReadFrequently: true }); tg.drawImage(CV, CV.width * 0.18, ya, t.width, hh, 0, 0, t.width, hh);
+          var id = tg.getImageData(0, 0, t.width, hh), px = id.data;
+          for (var k = 0; k < px.length; k += 4) {
+            var R = px[k], G = px[k + 1], B = px[k + 2], red = R > 140 && R > G * 1.6 && R > B * 1.6, v = red ? 255 : (0.3 * R + 0.59 * G + 0.11 * B < 128 ? 0 : 255);
+            px[k] = px[k + 1] = px[k + 2] = v;
+          }
+          tg.putImageData(id, 0, 0);
           return TS.recognize(t, "eng").then(function (r2) {
-            var ln = String(r2 && r2.data && r2.data.text || "").split("\n").map(function (x) { return x.trim(); }).filter(function (x) { return /[A-Za-z]{3}/.test(x) && !/built|bowling|distance|brush|total|tank|forward|reverse|volume|board|conditioner/i.test(x); }).sort(function (a, b) { return b.length - a.length; })[0];
-            if (ln) o.name = ln.replace(/^\W*(FLE\S*)?\s*/i, "").replace(/^[A-Za-z|]\s+/, "").replace(/\s*(K?EGEL\S*)?\s*$/i, "").replace(/[|\[\]{}]/g, "").trim().slice(0, 40);
+            var best = "", bestScore = 0;
+            String(r2 && r2.data && r2.data.text || "").split("\n").forEach(function (x) {
+              x = x.replace(/[^A-Za-z0-9 ()'’_\-.]/g, " ").replace(/\s{2,}/g, " ").trim();
+              x = x.replace(/^(FLE\S*|FL\S{0,2}X)\s*/i, "").replace(/\s*(K?EGEL\S*)$/i, "").trim();
+              x = x.replace(/^[^A-Za-z0-9(]+/, "").replace(/^[A-Za-z]\s+(?=\d)/, "").trim(); // logo crumbs like "T 2026…" or ". 2026…"
+              if (/built|bowling|distance|brush|total|tank|forward|reverse|volume|board|conditioner/i.test(x)) return;
+              var sc = (x.match(/[A-Z0-9]/g) || []).length - (x.match(/[a-z]/g) || []).length * 0.5;
+              if (x.length >= 3 && sc > bestScore) { best = x; bestScore = sc; }
+            });
+            if (best && bestScore >= 3) o.name = best.slice(0, 40);
             return o;
           }, function () { return o; });
         }).finally(function () { done = true; }).then(function (o) {
           var got = PF.filter(function (x) { return o[x[0]] != null; }).length + (o.ratio ? 1 : 0);
+          PF.forEach(function (x) { $("#pt-" + x[0]).value = ""; }); ratio = null; // a new sheet replaces everything, so old values can't linger
           fill(o); PF.forEach(function (x) { $("#pt-" + x[0]).classList.toggle("found", o[x[0]] != null); });
           msg.style.color = got >= 3 ? "var(--good)" : "var(--warn)";
           msg.textContent = got ? got + "개 항목을 읽었어요. 초록 칸을 확인하고, 틀린 값은 고친 뒤 적용하세요." : "숫자를 읽지 못했어요. 표가 화면에 꽉 차게 똑바로 다시 찍거나 직접 입력해주세요.";
         }).catch(function (err) { msg.style.color = "var(--bad)"; msg.textContent = String(err && err.message || err); });
-      });
+      }
+      $("#pt-cam").addEventListener("change", onPick); $("#pt-file").addEventListener("change", onPick);
       $("#pt-apply").onclick = function () {
         var o = {}; PF.forEach(function (f) { var v = $("#pt-" + f[0]).value.trim(); o[f[0]] = f[0] === "name" ? v.slice(0, 40) : pnum(v); });
         o.ratio = ratio;
         if (!o.len || o.len < 25 || o.len > 60) { msg.style.color = "var(--bad)"; msg.textContent = "오일 길이(25~60ft)를 넣어주세요."; $("#pt-len").focus(); return; }
         if (!o.vol && o.fwd && o.rev) o.vol = +(o.fwd + o.rev).toFixed(2);
         Object.keys(o).forEach(function (k) { if (o[k] == null || o[k] === "") delete o[k]; });
+        if (!o.name) { var td = new Date(); o.name = "패턴 " + o.len + "ft (" + (td.getMonth() + 1) + "/" + td.getDate() + ")"; }
         st.pattern = o; pr.oil = Math.round(clamp(o.len, 28, 55));
         if (o.name) { st.patterns = st.patterns.filter(function (q) { return q.name !== o.name; }); st.patterns.unshift(Object.assign({}, o)); st.patterns = st.patterns.slice(0, 12); }
         save(); closeSheet(); Mo.update();
       };
       var off = $("#pt-off"); if (off) off.onclick = function () { st.pattern = null; save(); closeSheet(); Mo.update(); };
-      if (photo) $("#pt-file").click();
+      if (photo) $("#pt-cam").click();
     });
   }
 
