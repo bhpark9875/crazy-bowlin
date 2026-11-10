@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Crazy Bowl-in (c) 2026 bh.park. All rights reserved. Unauthorized copying, redistribution or resale is prohibited. -->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -441,6 +442,8 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
 .pl-main span{font-size:11.5px;color:var(--muted)}
 .pl-on{font-size:10.5px;font-weight:700;color:var(--accent);margin-left:4px}
 .ptx.pl-x{border-radius:999px;min-width:32px;min-height:32px}.ptx.armed{color:var(--bad);border-color:var(--bad);font-size:11px;padding:0 8px}
+.lic{max-height:40vh;overflow:auto;white-space:pre-wrap;font-size:11px;line-height:1.5;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px;margin:0}
+.fn.copy{text-align:center;padding-top:4px;border-top:1px solid var(--line)}
 </style>
 
 <div id="splash" aria-hidden="true"><div class="spl">
@@ -1172,6 +1175,11 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     });
   }
 
+  // ================= bundled AI files: the Android app ships them in assets/vendor (works offline), web uses the CDN =================
+  var IN_APP = !!(window.Capacitor && window.Capacitor.nativePromise && ((window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) || (window.Capacitor.getPlatform && window.Capacitor.getPlatform() === "android")));
+  function vurl(p) { return new URL("vendor/" + p, location.href).href; }
+  function tryEach(list, fn) { return list.reduce(function (pr, it) { return pr.catch(function () { return fn(it); }); }, Promise.reject(new Error("start"))); }
+
   // ================= media: 투구 영상 · 자세 분석 · 날짜 요약 =================
   var Media = (function () {
     if (!Array.isArray(st.clips)) st.clips = [];
@@ -1370,11 +1378,16 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       var M = MODELS[kind];
       if (M.pl) return Promise.resolve(M.pl);
       if (M.ld) return M.ld;
-      var base = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@" + MPV;
-      M.ld = import(base + "/vision_bundle.mjs").then(function (V) {
-        return V.FilesetResolver.forVisionTasks(base + "/wasm").then(function (fs) {
-          function opt(dg) { return { baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_" + kind + "/float16/1/pose_landmarker_" + kind + ".task", delegate: dg }, runningMode: "VIDEO", numPoses: 3, minPoseDetectionConfidence: 0.3, minPosePresenceConfidence: 0.3, minTrackingConfidence: 0.3 }; }
-          return V.PoseLandmarker.createFromOptions(fs, opt("GPU")).catch(function () { return V.PoseLandmarker.createFromOptions(fs, opt("CPU")); });
+      var srcs = (IN_APP ? [{ mp: vurl("mediapipe"), model: vurl("models/pose_landmarker_" + kind + ".task") }] : []).concat([{
+        mp: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@" + MPV,
+        model: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_" + kind + "/float16/1/pose_landmarker_" + kind + ".task"
+      }]);
+      M.ld = tryEach(srcs, function (S) { // app files first, the internet copy only if they're missing
+        return import(S.mp + "/vision_bundle.mjs").then(function (V) {
+          return V.FilesetResolver.forVisionTasks(S.mp + "/wasm").then(function (fs) {
+            function opt(dg) { return { baseOptions: { modelAssetPath: S.model, delegate: dg }, runningMode: "VIDEO", numPoses: 3, minPoseDetectionConfidence: 0.3, minPosePresenceConfidence: 0.3, minTrackingConfidence: 0.3 }; }
+            return V.PoseLandmarker.createFromOptions(fs, opt("GPU")).catch(function () { return V.PoseLandmarker.createFromOptions(fs, opt("CPU")); });
+          });
         });
       }).then(function (p) { M.pl = p; return p; });
       M.ld.catch(function () { M.ld = null; });
@@ -1567,7 +1580,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     function runPose(meta, onProg) {
       var v = null, rec = null, hand = meta.handOverride || "auto";
       function fail() { throw new Error("분석 도구를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 눌러주세요."); }
-      onProg(0, "분석 도구 불러오는 중… (처음 한 번, 인터넷 필요)");
+      onProg(0, IN_APP ? "분석 준비 중…" : "분석 도구 불러오는 중… (처음 한 번, 인터넷 필요)");
       return Promise.all([loadPose("lite").catch(fail), get(meta.id)]).then(function (r) {
         rec = r[1]; if (!rec || !rec.blob) throw new Error("이 영상은 앱에 남아 있지 않아요");
         return openVideo(rec.blob).then(function (vv) { v = vv; return pass(v, r[0], MODELS.lite, false, onProg, "자세 찾는 중…"); });
@@ -1575,7 +1588,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
         var m = metrics(F, v.videoWidth, v.videoHeight, hand);
         if (!m.err && m.cover >= 60) return { F: F, m: m };
         // weak result (dark clothes, dim light, small figure): brighter frames + the larger model
-        onProg(0, "사람이 잘 안 보여서 밝게 보정해 정밀 분석 중… (처음 한 번 약 9MB)");
+        onProg(0, "사람이 잘 안 보여서 밝게 보정해 정밀 분석 중…" + (IN_APP ? "" : " (처음 한 번 약 9MB)"));
         return loadPose("full").catch(fail).then(function (pl) { return pass(v, pl, MODELS.full, true, onProg, "정밀 분석 중…"); }).then(function (F2) {
           var m2 = metrics(F2, v.videoWidth, v.videoHeight, hand);
           if (!m2.err && (m.err || m2.cover >= m.cover)) return { F: F2, m: m2 };
@@ -1792,9 +1805,31 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
     openSheet("⚙ 설정", function (body) {
       body.innerHTML = '<div class="field"><span class="flabel">글씨 크기</span><div id="set-fz"></div><p class="fn">코치 메모·볼 성향, 영상 분석, 기록 목록, 설정 같은 읽는 화면에 적용돼요.</p></div>' +
         '<ul class="adv set-prev"><li><b>미리보기</b> · 릴리스 때 머리가 슬라이드발 위에 잘 실려 중심이 안정적이에요.</li></ul>' +
-        '<div class="field"><span class="flabel">투구 손 · 스타일</span><p class="fn">궤적 탭의 <b>⚙ 투구 정보</b>에서 바꿀 수 있어요.</p></div>';
+        '<div class="field"><span class="flabel">투구 손 · 스타일</span><p class="fn">궤적 탭의 <b>⚙ 투구 정보</b>에서 바꿀 수 있어요.</p></div>' +
+        '<button type="button" class="btn" id="set-oss">오픈소스 라이선스</button>' +
+        '<p class="fn copy">Crazy Bowl-in © 2026 bh.park. All rights reserved.<br>이 앱의 코드·디자인·화면의 무단 복제·배포·재판매를 금지합니다.</p>';
       var seg = segmented(FZ, function () { return String(st.ui.fz || 1); }, function (v) { st.ui.fz = +v; save(); applyFz(); seg.refresh(); }, "글씨 크기", "fill");
       $("#set-fz").appendChild(seg);
+      $("#set-oss").onclick = openLicenses;
+    });
+  }
+  var OSS = [
+    ["MediaPipe Tasks Vision · Pose Landmarker", "영상 자세 분석", "Apache License 2.0", "Google LLC", "https://github.com/google-ai-edge/mediapipe"],
+    ["Tesseract.js · tesseract.js-core", "패턴표 글자 인식", "Apache License 2.0", "Tesseract.js contributors", "https://github.com/naptha/tesseract.js"],
+    ["Tesseract OCR · 영어 학습 데이터", "패턴표 글자 인식", "Apache License 2.0", "Google / Tesseract contributors", "https://github.com/tesseract-ocr/tesseract"],
+    ["Capacitor", "안드로이드 앱", "MIT License", "Ionic", "https://capacitorjs.com"],
+    ["Barlow Condensed · IBM Plex Sans KR", "글꼴 (Google Fonts)", "SIL Open Font License 1.1", "각 글꼴 제작자", "https://fonts.google.com"]
+  ];
+  function openLicenses() {
+    openSheet("오픈소스 라이선스", function (body) {
+      body.innerHTML = '<p class="fn">Crazy Bowl-in © 2026 bh.park. All rights reserved. 앱 자체의 코드·디자인은 저작권자의 허락 없이 사용할 수 없어요. 단, 아래 오픈소스는 각자의 라이선스를 따라요.</p>' +
+        '<ul class="plist">' + OSS.map(function (o) { return '<li><div class="pl-main" style="cursor:default"><b>' + o[0] + "</b><span>" + o[1] + " · " + o[2] + " · " + o[3] + '</span><span><a href="' + o[4] + '" target="_blank" rel="noopener">' + o[4].replace(/^https:\/\//, "") + "</a></span></div></li>"; }).join("") + "</ul>" +
+        (IN_APP ? '<div class="acts"><button type="button" class="btn sm" data-lic="NOTICES.txt">고지 전문</button><button type="button" class="btn sm" data-lic="Apache-2.0.txt">Apache 2.0 전문</button><button type="button" class="btn sm" data-lic="MIT-Capacitor.txt">MIT 전문</button></div>'
+          : '<p class="fn">라이선스 전문: <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache 2.0</a> · <a href="https://opensource.org/license/mit" target="_blank" rel="noopener">MIT</a> · <a href="https://openfontlicense.org" target="_blank" rel="noopener">OFL 1.1</a></p>') +
+        '<pre class="lic" id="lic-text" hidden></pre>';
+      $$("[data-lic]", body).forEach(function (b) {
+        b.onclick = function () { var pre = $("#lic-text"); fetch(vurl("licenses/" + b.dataset.lic)).then(function (r) { return r.text(); }).then(function (t) { pre.textContent = t; pre.hidden = false; }, function () { pre.textContent = "파일을 열 수 없어요."; pre.hidden = false; }); };
+      });
     });
   }
   applyFz();
@@ -1839,15 +1874,15 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
   var PF = [["name", "패턴 이름", "text", "예: WB Montreal"], ["len", "오일 길이 (ft)", "decimal", "41"], ["vol", "총 오일량 (mL)", "decimal", "26.89"], ["fwd", "정방향 오일 (mL)", "decimal", "21.005"], ["rev", "역방향 오일 (mL)", "decimal", "5.885"], ["drop", "리버스 브러시 드롭 (ft)", "decimal", "34"]];
   function patLabel(P) { return (P.name || "패턴") + " · " + P.len + "ft" + (P.vol ? " · " + P.vol + "mL" : "") + (P.ratio ? " · " + P.ratio + ":1" : "") + (P.edited ? " · 길이 수동" : ""); }
   var TESS = null;
+  var TOPTS = {}; // in the app: worker, engine and English data come from assets/vendor
   function loadTess() {
     if (window.Tesseract) return Promise.resolve(window.Tesseract);
     if (TESS) return TESS;
-    TESS = new Promise(function (res, rej) {
-      var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
-      s.onload = function () { res(window.Tesseract); };
-      s.onerror = function () { TESS = null; s.remove(); rej(new Error("글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.")); };
-      document.head.appendChild(s);
-    });
+    function script(src) { return new Promise(function (res, rej) { var s = document.createElement("script"); s.src = src; s.onload = function () { res(window.Tesseract); }; s.onerror = function () { s.remove(); rej(new Error("load")); }; document.head.appendChild(s); }); }
+    var list = (IN_APP ? [{ src: vurl("tesseract/tesseract.min.js"), opts: { workerPath: vurl("tesseract/worker.min.js"), corePath: vurl("tesseract-core"), langPath: vurl("lang") } }] : [])
+      .concat([{ src: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js", opts: {} }]);
+    TESS = tryEach(list, function (it) { return script(it.src).then(function (T) { TOPTS = it.opts; return T; }); })
+      .catch(function () { TESS = null; throw new Error("글자 인식 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요."); });
     return TESS;
   }
   // upscale small screenshots/photos so the small print on the sheet is readable
@@ -1947,13 +1982,13 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       $("#pt-album").onclick = function () { $("#pt-file").click(); };
       function onPick(e) {
         var f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
-        msg.style.color = ""; msg.textContent = "글자 인식 도구 불러오는 중… (처음 한 번 약 15MB, 인터넷 필요)";
+        msg.style.color = ""; msg.textContent = IN_APP ? "글자 인식 준비 중…" : "글자 인식 도구 불러오는 중… (처음 한 번 약 7MB, 인터넷 필요)";
         var STAGE = { "loading tesseract core": "인식 엔진 받는 중…", "initializing tesseract": "인식 엔진 준비 중…", "loading language traineddata": "영어 글자 데이터 받는 중…", "initializing api": "인식 준비 중…" }, last = Date.now(), done = false;
         var dog = setInterval(function () { if (done) return clearInterval(dog); if (Date.now() - last > 45000) { clearInterval(dog); msg.style.color = "var(--bad)"; msg.textContent = "응답이 없어요. 인터넷 연결을 확인하고 다시 눌러주세요. (" + msg.textContent + ")"; } }, 3000);
         var TS = null, CV = null;
         Promise.all([loadTess(), prepImage(f)]).then(function (r) {
           TS = r[0]; CV = r[1];
-          return r[0].recognize(r[1], "eng", { logger: function (m) { last = Date.now(); msg.textContent = m.status === "recognizing text" ? "패턴표 읽는 중… " + Math.round(m.progress * 100) + "%" : (STAGE[m.status] || m.status) + (m.progress && m.progress < 1 ? " " + Math.round(m.progress * 100) + "%" : ""); } });
+          return r[0].recognize(r[1], "eng", Object.assign({}, TOPTS, { logger: function (m) { last = Date.now(); msg.textContent = m.status === "recognizing text" ? "패턴표 읽는 중… " + Math.round(m.progress * 100) + "%" : (STAGE[m.status] || m.status) + (m.progress && m.progress < 1 ? " " + Math.round(m.progress * 100) + "%" : ""); } }));
         }).then(function (res) {
           var o = parsePattern(res && res.data && res.data.text);
           if (o.name) return o;
@@ -1970,7 +2005,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
             px[k] = px[k + 1] = px[k + 2] = v;
           }
           tg.putImageData(id, 0, 0);
-          return TS.recognize(t, "eng").then(function (r2) {
+          return TS.recognize(t, "eng", TOPTS).then(function (r2) {
             var best = "", bestScore = 0;
             String(r2 && r2.data && r2.data.text || "").split("\n").forEach(function (x) {
               x = x.replace(/[^A-Za-z0-9 ()'’_\-.]/g, " ").replace(/\s{2,}/g, " ").trim();
