@@ -1,5 +1,5 @@
 // Crazy Bowl-in service worker: 앱을 고친 뒤 다시 올릴 때는 VERSION 숫자를 올려주세요.
-const VERSION = "bowlin-v20";
+const VERSION = "bowlin-v21";
 const MODELS = "bowlin-models-1"; // AI files (pose / text recognition) kept across app updates
 const MODEL_HOSTS = ["cdn.jsdelivr.net", "storage.googleapis.com"];
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./favicon.png"];
