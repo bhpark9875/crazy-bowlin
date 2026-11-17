@@ -189,7 +189,7 @@ input[type="range"]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;b
 .dt-h b{font-size:14px;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .dt-h .pill{margin-left:auto}
 .dt-v{font-size:11.5px;color:var(--ink2);line-height:1.55}.dt-v .mono{font-size:14px;color:var(--ink)}
-.dt-acts{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px}.dt-acts .btn{padding-inline:6px;}
+.dt-acts{display:grid;grid-template-columns:1.25fr .8fr .8fr 1.35fr;gap:6px}.dt-acts .btn{padding-inline:6px;}
 .dots{flex:none;display:flex;justify-content:center;gap:6px;padding:1px 0}
 .dots i{width:6px;height:6px;border-radius:20px;background:var(--z1)}.dots i.on{background:var(--accent);width:18px}
 .listcard{flex:1;min-height:0;overflow-y:auto;padding:4px 12px;overscroll-behavior:contain;}
@@ -432,6 +432,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
 .pat-l span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .patrow .btn.sm{min-height:32px;padding:4px 8px;flex:none}
 .pt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pt-grid .wide{grid-column:1/-1}
+.de-guide{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:10px;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:10px}.de-ill{width:100%;height:auto}.de-tips{margin:0;padding-left:16px;font-size:12px;line-height:1.55}.de-step{display:grid;gap:2px}.de-step b{font-size:14px}.de-wrap{position:relative;display:flex;justify-content:center}.de-cv{display:block;border-radius:12px;touch-action:none;background:#000}.de-loupe{position:absolute;top:8px;width:120px;height:120px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.4);pointer-events:none;background:#000}.de-out{display:grid;gap:8px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px}.de-badge{justify-self:start;font-size:10.5px;font-weight:700;color:var(--warn);background:color-mix(in srgb,var(--warn),transparent 88%);border-radius:999px;padding:3px 9px}.de-sum{margin:0;font-size:15px;font-weight:750}.de-sum small{display:block;font-size:11.5px;font-weight:500;color:var(--ink2);margin-top:2px}.de-lines{margin:0;padding-left:16px;font-size:12px;line-height:1.55;color:var(--ink2)}@media(max-width:380px){.de-guide{grid-template-columns:1fr}}
 .pt-chips{display:flex;flex-wrap:wrap;gap:6px}.pt-acts .btn{flex:1}.ptc{display:inline-flex;align-items:center}.ptc .chipbtn{border-radius:999px 0 0 999px;border-right:0}.ptx{font:inherit;font-size:14px;line-height:1;min-height:30px;padding:0 9px;border:1px solid var(--line);border-radius:0 999px 999px 0;background:var(--surface2);color:var(--muted);cursor:pointer}
 .txt.found{border-color:var(--good);box-shadow:0 0 0 2px rgba(46,160,90,.18)}
 .plist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -819,11 +820,12 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       d.innerHTML =
         '<div class="dt-h"><span class="nb sel">' + idx(b0) + "</span><b>" + esc(b0.name) + '</b><span class="pill mut">' + QSHORT[quad(b0).y][quad(b0).x] + "</span></div>" +
         '<div class="dt-v"><span class="mono">RG ' + f3(b0.rg) + " · DIFF " + f3(b0.diff) + " · ASY " + f3(b0.asy) + "</span><br>" +
-        lookup(COVERS, b0.cover)[1] + " · " + lookup(GRITS, b0.grit)[1] + ((b0.feel || 0) ? " · 체감 " + FEEL[b0.feel + 2] : "") + " · " + (b0.layout ? "지공 " + lstr(b0.layout) : "지공 정보 없음") + "</div>" +
-        '<div class="dt-acts"><button type="button" class="btn pri sm" id="dt-go">🎯 궤적 보기</button><button type="button" class="btn sm" id="dt-ed">수정</button><button type="button" class="btn sm" id="dt-dr">지공</button></div>';
+        lookup(COVERS, b0.cover)[1] + " · " + lookup(GRITS, b0.grit)[1] + ((b0.feel || 0) ? " · 체감 " + FEEL[b0.feel + 2] : "") + " · " + (b0.layout ? "지공 " + lstr(b0.layout) + (b0.layout.est ? " (사진 추정)" : "") : "지공 정보 없음") + "</div>" +
+        '<div class="dt-acts"><button type="button" class="btn pri sm" id="dt-go">🎯 궤적 보기</button><button type="button" class="btn sm" id="dt-ed">수정</button><button type="button" class="btn sm" id="dt-dr">지공</button><button type="button" class="btn sm" id="dt-es">📷 지공 추정</button></div>';
       $("#dt-go").onclick = function () { location.hash = "#motion"; };
       $("#dt-ed").onclick = function () { openEditor(b0, "spec"); };
       $("#dt-dr").onclick = function () { openEditor(b0, "drill"); };
+      $("#dt-es").onclick = function () { openDrillEst(b0); };
     }
     var ul = $("#my-list"); ul.innerHTML = "";
     if (!balls.length) ul.innerHTML = '<li><p class="empty">등록한 볼이 없어요.</p></li>';
@@ -879,7 +881,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
           }, "표기 형식", "wrap"));
           function lay() {
             var Lw = $("#ed-lay"); Lw.innerHTML = "";
-            if (!ed.layout) { Lw.innerHTML = '<p class="fn">프로샵에서 받은 표기 형식을 골라주세요. VLS 예: 5 × 4½ × 2 · 듀얼 앵글 예: 50° × 4½ × 40°</p>'; return; }
+            if (!ed.layout) { Lw.innerHTML = '<p class="fn">프로샵에서 받은 표기 형식을 골라주세요. VLS 예: 5 × 4½ × 2 · 듀얼 앵글 예: 50° × 4½ × 40°</p>' + (b ? '<button type="button" class="btn brand sm" id="ed-est">📷 모르면 사진으로 추정하기</button>' : '<p class="fn">수치를 모르면 볼을 저장한 뒤 [📷 지공 추정]으로 사진에서 대략 찾을 수 있어요.</p>'); var eb = $("#ed-est"); if (eb) eb.onclick = function () { closeSheet(); setTimeout(function () { openDrillEst(b); }, 230); }; return; }
             var L = ed.layout, s = document.createElement("div"); s.className = "stps";
             s.innerHTML = '<p class="lstr" id="ed-lstr"></p>';
             Lw.appendChild(s);
@@ -894,7 +896,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
               { k: "val", label: "VAL 각", sub: "도", min: 10, max: 90, step: 5, dec: 0, ex: function (v) { return v + "°"; } }
             ];
             function ls() { $("#ed-lstr").innerHTML = lstr(L) + "<small>" + (L.fmt === "vls" ? "핀-PAP × 핀 버퍼 × MB-PAP" : "드릴 각 × 핀-PAP × VAL 각") + "</small>"; }
-            defs.forEach(function (x) { s.appendChild(stepper({ id: "ed-" + x.k, label: x.label, sub: x.sub, min: x.min, max: x.max, step: x.step, dec: x.dec, extra: x.ex, get: function () { return L[x.k]; }, set: function (v) { L[x.k] = v; }, onChange: ls })); });
+            defs.forEach(function (x) { s.appendChild(stepper({ id: "ed-" + x.k, label: x.label, sub: x.sub, min: x.min, max: x.max, step: x.step, dec: x.dec, extra: x.ex, get: function () { return L[x.k]; }, set: function (v) { L[x.k] = v; }, onChange: function () { delete L.est; ls(); } })); });
             ls();
           }
           lay();
@@ -914,6 +916,252 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
         if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "한 번 더 누르면 지워져요"; return; }
         st.balls = st.balls.filter(function (x) { return x.id !== ed.id; }); save(); closeSheet(); render();
       };
+    });
+  }
+
+  // photo -> layout geometry: back-project taps onto an 8.5" sphere (pinhole camera ~24mm equiv)
+  var DGEO = (function () {
+  var R_IN = 4.25; // ball radius, inches (8.5" diameter)
+  function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  function add(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+  function mul(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+  function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  function nrm(a) { var l = Math.sqrt(dot(a, a)) || 1; return mul(a, 1 / l); }
+  function arc(a, b) { return R_IN * Math.acos(Math.max(-1, Math.min(1, dot(a, b)))); }
+  // circle through 3 points
+  function circle3(p) {
+    var ax = p[0][0], ay = p[0][1], bx = p[1][0], by = p[1][1], cx = p[2][0], cy = p[2][1];
+    var d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    if (Math.abs(d) < 1e-6) return null;
+    var a2 = ax * ax + ay * ay, b2 = bx * bx + by * by, c2 = cx * cx + cy * cy;
+    var ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d, uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d;
+    return { x: ux, y: uy, r: Math.hypot(ax - ux, ay - uy) };
+  }
+  // camera model: pinhole, focal f px, principal point = image center. Camera looks along -z, x right, y up.
+  function model(img, circ, fFac) {
+    var f = (fFac || 0.85) * Math.max(img.w, img.h);
+    function ray(x, y) { return nrm([x - img.w / 2, -(y - img.h / 2), -f]); }
+    var rc = ray(circ.x, circ.y);
+    // angular radius of silhouette ~ atan(r/f) (exact enough near center)
+    var alpha = Math.atan(circ.r / f);
+    var D = 1 / Math.sin(alpha); // distance to sphere center in ball-radius units
+    var C = mul(rc, D);
+    function onBall(x, y) { // unit normal of the visible point hit by the ray through pixel
+      var d = ray(x, y), b = dot(d, C), disc = b * b - (dot(C, C) - 1), t = disc > 0 ? b - Math.sqrt(disc) : b;
+      return nrm(sub(mul(d, t), C));
+    }
+    function toPx(n) { var w = add(C, n), vis = dot(n, mul(w, -1)) > 0; return { x: img.w / 2 + f * w[0] / -w[2], y: img.h / 2 - f * w[1] / -w[2], vis: vis }; }
+    return { onBall: onBall, toPx: toPx, C: C };
+  }
+  // exp map on unit sphere from point g along tangent vector t (radians)
+  function walk(g, t) { var th = Math.sqrt(dot(t, t)); if (th < 1e-9) return g; return nrm(add(mul(g, Math.cos(th)), mul(t, Math.sin(th) / th))); }
+  function tangentTo(from, to) { return nrm(sub(to, mul(from, dot(from, to)))); }
+  function angBetween(a, b) { return Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) * 180 / Math.PI; }
+
+  // o: {img:{w,h}, edge:[[x,y]x3], f1,f2,[th], pin, [mb], hand:'R'|'L', papH, papV}
+  function estimate(o) {
+    var circ = circle3(o.edge); if (!circ) return { err: "공 테두리를 다시 찍어주세요 (세 점이 한 줄이에요)" };
+    var M = model(o.img, circ, o.fFac || 0.67), P = function (p) { return M.onBall(p[0], p[1]); };
+    var F1 = P(o.f1), F2 = P(o.f2), Fm = nrm(add(F1, F2)), T, virtualThumb = false;
+    if (o.th) T = P(o.th);
+    else { // virtual thumb: from finger midpoint, perpendicular to the finger line, toward image-down
+      var fl = tangentTo(Fm, F2), perp = nrm(cross(Fm, fl));
+      var down = M.onBall(o.f1[0], o.f1[1] + 50); // a point lower in the image
+      if (dot(perp, sub(down, F1)) < 0) perp = mul(perp, -1);
+      T = walk(Fm, mul(perp, 4.75 / R_IN)); virtualThumb = true;
+    }
+    var G = nrm(add(Fm, T));                 // center of grip
+    var up = tangentTo(G, Fm);               // midline direction toward fingers
+    var right = nrm(cross(up, G));           // bowler's right when looking at the grip
+    var side = o.hand === "L" ? -1 : 1;
+    var PAP = walk(G, add(mul(right, side * o.papH / R_IN), mul(up, o.papV / R_IN)));
+    // VAL: great circle through PAP perpendicular to the horizontal line through the grip (pole = midline-plane normal)
+    var pole = nrm(cross(G, right)); if (dot(pole, up) < 0) pole = mul(pole, -1);
+    var valUp = tangentTo(PAP, pole), valN = nrm(cross(PAP, valUp));
+    var res = { virtualThumb: virtualThumb, span: arc(Fm, T), papPx: M.toPx(PAP), gripPx: M.toPx(G), thumbPx: virtualThumb ? M.toPx(T) : null, circ: circ };
+    // grip-plane coords (inches) for interpretation
+    function loc(X) { var c = dot(X, G); return { x: R_IN * Math.atan2(dot(X, right) * side, c), y: R_IN * Math.atan2(dot(X, up), c) }; }
+    res.fingerY = loc(Fm).y; res.thumbY = loc(T).y;
+    if (o.pin) {
+      var Pin = P(o.pin);
+      res.pin = loc(Pin);
+      res.pinPap = arc(Pin, PAP);
+      res.buffer = R_IN * Math.asin(Math.min(1, Math.abs(dot(Pin, valN))));
+      var a = angBetween(tangentTo(PAP, Pin), valUp); res.val = a > 90 ? 180 - a : a;
+      if (o.mb) {
+        var MB = P(o.mb);
+        res.mbPap = arc(MB, PAP);
+        res.drill = angBetween(tangentTo(Pin, PAP), tangentTo(Pin, MB));
+        res.mb = loc(MB);
+      }
+    }
+    return res;
+  }
+  return { estimate: estimate, circle3: circle3 };
+})();
+
+  // ================= drilling estimate from a ball photo =================
+  var GRIPS = [["normal", "일반 (엄지 사용)", 5, 0.5], ["thumbless", "덤리스", 5, 0.75], ["twohand", "투핸드", 4.5, 1]];
+  function gripOf(pr) { return pr.grip || (pr.style === "thumbless" || pr.style === "twohand" ? pr.style : "normal"); }
+  function papFor(pr) { var g = lookup(GRIPS, gripOf(pr)); return pr.papCustom ? { h: pr.papH, v: pr.papV, mine: true } : { h: g[2], v: g[3], mine: false }; }
+  function r8(v) { return Math.round(v * 8) / 8; }
+  function deRead(e, asym) {
+    var out = [], pos = e.pin.y > e.fingerY + 0.3 ? "up" : e.pin.y < e.fingerY - 0.3 ? "down" : "mid";
+    out.push(pos === "up" ? "📍 <b>핀 업</b> · 핀이 손가락 구멍보다 위에 있어요" : pos === "down" ? "📍 <b>핀 다운</b> · 핀이 손가락 구멍보다 아래에 있어요" : "📍 핀이 손가락 구멍과 비슷한 높이예요");
+    out.push(e.pinPap < 2.5 ? "핀-PAP가 짧아요 → 일찍 굴러서 부드럽고 다루기 쉬워요" : e.pinPap > 4.75 ? "핀-PAP가 길어요 → 길게 가서 늦게, 덜 넓게 꺾여요" : "핀-PAP가 중간이라 플레어가 큰 편이에요 (최대는 3⅜″ 근처) → 많이 꺾여요");
+    out.push(e.buffer <= 2.5 ? "핀 버퍼가 짧아요 → 강하고 빠르게 방향을 틀어요" : e.buffer >= 4 ? "핀 버퍼가 길어요 → 약하고 천천히 부드럽게 돌아요" : "핀 버퍼가 중간이에요 → 적당히 꺾여요");
+    if (e.mbPap != null) out.push(e.mbPap < 3 ? "MB-PAP가 짧아요 → 안정적이고 부드러운 움직임" : e.mbPap > 5 ? "MB-PAP가 길어요 → 길게 가서 늦고 약하게 반응" : "MB-PAP가 중간(4″ 근처)이에요 → 플레어와 훅이 커요");
+    else if (asym) out.push("MB를 못 찍어서 비대칭 코어 효과는 빠졌어요");
+    var len = e.pinPap > 4.5 ? "길게 가서" : e.pinPap < 2.5 ? "일찍 굴러" : "중간 길이에서", shape = e.buffer <= 2.5 ? "빠르고 강하게 꺾이는" : e.buffer >= 4 ? "천천히 부드럽게 도는" : "적당히 꺾이는";
+    var lane = e.buffer <= 2.5 && e.pinPap > 3 ? "중간~마른 레인" : e.buffer >= 4 || e.pinPap < 2.5 ? "오일 많은 레인 · 컨트롤용" : "중간 레인";
+    return { sum: len + " " + shape + " 레이아웃", lane: lane, lines: out };
+  }
+  var DE_SVG = '<svg viewBox="0 0 220 150" class="de-ill" role="img" aria-label="표시 찾는 법 예시 그림"><circle cx="75" cy="78" r="64" fill="var(--surface3)" stroke="var(--line)" stroke-width="2"/>' +
+    '<circle cx="60" cy="46" r="8" fill="var(--surface)" stroke="var(--ink2)" stroke-width="2"/><circle cx="88" cy="46" r="8" fill="var(--surface)" stroke="var(--ink2)" stroke-width="2"/><circle cx="72" cy="112" r="10" fill="var(--surface)" stroke="var(--ink2)" stroke-width="2"/>' +
+    '<circle cx="84" cy="24" r="4.5" fill="#e0453a"/><circle cx="104" cy="118" r="4" fill="#fff" stroke="#333" stroke-width="1.5"/>' +
+    '<text x="150" y="26" font-size="11" fill="var(--ink)">🔴 핀</text><text x="150" y="40" font-size="9" fill="var(--muted)">구멍 근처 색 점</text><line x1="90" y1="24" x2="146" y2="23" stroke="#e0453a" stroke-dasharray="3 2"/>' +
+    '<text x="150" y="76" font-size="11" fill="var(--ink)">구멍</text><text x="150" y="90" font-size="9" fill="var(--muted)">손가락 2 · 엄지</text><line x1="96" y1="48" x2="146" y2="72" stroke="var(--ink2)" stroke-dasharray="3 2"/>' +
+    '<text x="150" y="118" font-size="11" fill="var(--ink)">⚪ MB</text><text x="150" y="132" font-size="9" fill="var(--muted)">비대칭 공만</text><line x1="108" y1="118" x2="146" y2="115" stroke="var(--ink2)" stroke-dasharray="3 2"/></svg>';
+  function openDrillEst(b) {
+    var pr = st.profile;
+    openSheet("📷 지공 추정 · " + esc(b.name), function (body) {
+      var asym = (b.asy || 0) >= 0.005;
+      body.innerHTML =
+        '<div class="field"><span class="flabel">그립 방식</span><div id="de-grip"></div></div>' +
+        '<p class="fn" id="de-pap"></p>' +
+        '<div class="de-guide">' + DE_SVG + '<ul class="de-tips"><li>손가락 구멍이 <b>위</b>로 오게 놓고</li><li>공이 화면에 <b>꽉 차게</b>, 정면 위에서</li><li><b>핀</b>' + (asym ? "과 <b>MB</b>가" : "이") + ' 같이 보이게 찍어주세요</li><li>모르는 표시는 건너뛰어도 돼요</li></ul></div>' +
+        '<div class="acts pt-acts"><button type="button" class="btn brand" id="de-cam">📷 바로 찍기</button><button type="button" class="btn" id="de-alb">🖼 앨범에서</button><input type="file" id="de-fc" accept="image/*" capture="environment" hidden><input type="file" id="de-fa" accept="image/*" hidden></div>' +
+        '<div id="de-work" hidden></div><p class="fn" id="de-msg" role="status"></p>';
+      function papLine() {
+        var P = papFor(pr);
+        $("#de-pap").innerHTML = "계산에 쓰는 PAP(Positive Axis Point, 내 회전축 점): <b>" + (pr.hand === "L" ? "왼쪽 " : "오른쪽 ") + fracPlain(P.h) + "″ · " + (P.v >= 0 ? "위 " : "아래 ") + fracPlain(Math.abs(P.v)) + "″</b> " + (P.mine ? "(내 설정값)" : "(평균값)") + ' <button type="button" class="lnk" id="de-pset" style="margin-left:4px">내 PAP 넣기</button>';
+        $("#de-pset").onclick = function () { closeSheet(); setTimeout(openBowler, 230); };
+      }
+      $("#de-grip").appendChild(segmented(GRIPS.map(function (g) { return [g[0], g[1]]; }), function () { return gripOf(pr); }, function (v) { pr.grip = v; save(); papLine(); }, "그립 방식", "wrap"));
+      papLine();
+      $("#de-cam").onclick = function () { $("#de-fc").click(); };
+      $("#de-alb").onclick = function () { $("#de-fa").click(); };
+      function pick(e) {
+        var f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
+        var u = URL.createObjectURL(f), im = new Image();
+        im.onload = function () {
+          var sc = Math.min(1, 1600 / Math.max(im.width, im.height)), c = document.createElement("canvas");
+          c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+          c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+          $(".de-guide", body).hidden = true; $(".pt-acts", body).hidden = true;
+          tapper(c);
+        };
+        im.onerror = function () { URL.revokeObjectURL(u); $("#de-msg").textContent = "사진을 열 수 없어요."; };
+        im.src = u;
+      }
+      $("#de-fc").addEventListener("change", pick); $("#de-fa").addEventListener("change", pick);
+
+      function tapper(src) {
+        var grip = gripOf(pr), W = $("#de-work"); W.hidden = false;
+        var steps = [
+          { k: "e1", t: "공 테두리(가장자리)를 아무 데나 터치 (1/3)", h: "공과 배경이 만나는 선 위를 눌러요. 세 곳이 서로 멀수록 정확해요." },
+          { k: "e2", t: "공 테두리를 한 곳 더 (2/3)", h: "첫 점과 멀리 떨어진 곳으로" },
+          { k: "e3", t: "공 테두리 마지막 (3/3)", h: "세 점으로 공 크기를 재요 (지름 8.5인치)" },
+          { k: "f1", t: "손가락 구멍 하나의 가운데", h: "중지나 약지 구멍, 순서 상관없어요" },
+          { k: "f2", t: "다른 손가락 구멍의 가운데", h: "" }
+        ];
+        if (grip === "normal") steps.push({ k: "th", t: "엄지 구멍의 가운데", h: "" });
+        if (grip === "twohand") steps.push({ k: "th", t: "엄지 구멍의 가운데", h: "엄지 구멍이 없으면 건너뛰세요", skip: "엄지 구멍 없음" });
+        steps.push({ k: "pin", t: "🔴 핀 (작은 색 점)", h: "구멍 근처의 지름 5mm 정도 점이에요. 로고·반사광과 헷갈리지 않게 확대 돋보기로 확인하세요.", skip: "못 찾겠어요", alt: "구멍 안에 있어요" });
+        if (asym) steps.push({ k: "mb", t: "⚪ MB (질량 편심 표시)", h: "핀보다 멀리, 보통 엄지 옆에 있는 점이나 동그라미예요.", skip: "못 찾겠어요" });
+        var pts = {}, cur = 0, inHole = false, done = false, hist = [];
+        W.innerHTML = '<div class="de-step"><b id="de-t"></b><span class="fn" id="de-h"></span></div><div class="de-wrap"><canvas class="de-cv" id="de-cv"></canvas><canvas class="de-loupe" id="de-lp" width="120" height="120" hidden></canvas></div>' +
+          '<div class="acts" id="de-acts"></div><div id="de-res"></div>';
+        var cv = $("#de-cv"), g = cv.getContext("2d"), lp = $("#de-lp"), lg = lp.getContext("2d");
+        cv.width = src.width; cv.height = src.height;
+        var maxH = Math.max(260, Math.round(window.innerHeight * 0.55)), wW = W.clientWidth || 320, s = Math.min(wW / src.width, maxH / src.height);
+        cv.style.width = Math.round(src.width * s) + "px"; cv.style.height = Math.round(src.height * s) + "px";
+        var U = Math.max(src.width, src.height) / 400; // stroke unit in image px
+        function circ() { return pts.e1 && pts.e2 && pts.e3 ? DGEO.circle3([pts.e1, pts.e2, pts.e3]) : null; }
+        function dot(p, col, rr, ring) { g.beginPath(); g.arc(p[0], p[1], rr * U, 0, 7); if (ring) { g.lineWidth = 2.2 * U; g.strokeStyle = col; g.stroke(); } else { g.fillStyle = col; g.fill(); g.lineWidth = 1.2 * U; g.strokeStyle = "#fff"; g.stroke(); } }
+        function label(p, t, col) { g.font = "700 " + Math.round(11 * U) + "px sans-serif"; var w = g.measureText(t).width, x = p[0] + 9 * U + w > cv.width - 4 * U ? p[0] - 9 * U - w : p[0] + 9 * U, y = Math.max(14 * U, p[1] - 7 * U); g.lineWidth = 3 * U; g.strokeStyle = "rgba(0,0,0,.6)"; g.strokeText(t, x, y); g.fillStyle = col; g.fillText(t, x, y); }
+        var res = null;
+        function draw() {
+          g.drawImage(src, 0, 0);
+          var c = circ();
+          if (c) { g.beginPath(); g.arc(c.x, c.y, c.r, 0, 7); g.lineWidth = 2 * U; g.strokeStyle = "rgba(53,121,201,.9)"; g.setLineDash([8 * U, 5 * U]); g.stroke(); g.setLineDash([]); }
+          ["e1", "e2", "e3"].forEach(function (k) { if (pts[k]) dot(pts[k], "#3579c9", 4); });
+          ["f1", "f2", "th"].forEach(function (k) { if (pts[k]) { dot(pts[k], "#f19a3b", 11, true); } });
+          if (pts.th) label(pts.th, "엄지", "#f19a3b");
+          if (pts.pin) { dot(pts.pin, "#e0453a", 6); label(pts.pin, "핀", "#ff7a6e"); }
+          if (pts.mb) { dot(pts.mb, "#ffffff", 6, true); label(pts.mb, "MB", "#fff"); }
+          if (res && !res.err) {
+            if (res.thumbPx) { dot([res.thumbPx.x, res.thumbPx.y], "rgba(241,154,59,.6)", 11, true); label([res.thumbPx.x, res.thumbPx.y], "가상 엄지", "#f7ad55"); }
+            var pp = res.papPx;
+            if (pp.vis) {
+              g.lineWidth = 2.4 * U; g.strokeStyle = "#5fd0ff";
+              g.beginPath(); g.moveTo(pp.x - 8 * U, pp.y - 8 * U); g.lineTo(pp.x + 8 * U, pp.y + 8 * U); g.moveTo(pp.x + 8 * U, pp.y - 8 * U); g.lineTo(pp.x - 8 * U, pp.y + 8 * U); g.stroke();
+              if (pts.pin) { g.setLineDash([6 * U, 4 * U]); g.beginPath(); g.moveTo(pp.x, pp.y); g.lineTo(pts.pin[0], pts.pin[1]); g.stroke(); g.setLineDash([]); }
+              label([pp.x, pp.y], "PAP(추정)", "#5fd0ff");
+            }
+          }
+        }
+        function stepUI() {
+          var a = $("#de-acts"); a.innerHTML = "";
+          var undo = document.createElement("button"); undo.type = "button"; undo.className = "btn sm"; undo.textContent = "↶ 되돌리기";
+          undo.disabled = !hist.length;
+          undo.onclick = function () { if (!hist.length) return; var pv = hist.pop(); delete pts[steps[pv].k]; cur = pv; done = false; res = null; inHole = false; $("#de-res").innerHTML = ""; stepUI(); draw(); };
+          a.appendChild(undo);
+          if (done) { $("#de-t").textContent = "결과"; $("#de-h").textContent = "점을 고치려면 되돌리기를 누르세요."; return; }
+          var S = steps[cur];
+          $("#de-t").textContent = (cur + 1) + "/" + steps.length + " · " + (S.k === "pin" && inHole ? "핀이 사라진 구멍의 가운데" : S.t);
+          $("#de-h").textContent = S.k === "pin" && inHole ? "지공하면서 핀이 구멍 속으로 뚫려 없어진 경우예요. 그 구멍 가운데를 터치하세요." : S.h;
+          if (S.alt && !inHole) { var al = document.createElement("button"); al.type = "button"; al.className = "btn sm"; al.textContent = S.alt; al.onclick = function () { inHole = true; stepUI(); }; a.appendChild(al); }
+          if (S.skip) { var sk = document.createElement("button"); sk.type = "button"; sk.className = "btn sm ghost"; sk.textContent = S.skip; sk.onclick = function () { next(); }; a.appendChild(sk); }
+        }
+        function next() { hist.push(cur); cur++; if (cur >= steps.length) finish(); else stepUI(); draw(); }
+        function toImg(ev) { var r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) * cv.width / r.width, (ev.clientY - r.top) * cv.height / r.height]; }
+        function loupe(p, ev) {
+          var r = cv.getBoundingClientRect(), z = 3, L = 120, sw = L / z * cv.width / r.width;
+          lp.hidden = false;
+          var left = (ev.clientX - r.left) < r.width / 2;
+          lp.style.left = left ? "auto" : "8px"; lp.style.right = left ? "8px" : "auto";
+          lg.imageSmoothingEnabled = false; lg.clearRect(0, 0, L, L);
+          lg.drawImage(cv, p[0] - sw / 2, p[1] - sw / 2, sw, sw, 0, 0, L, L);
+          lg.strokeStyle = "#ff3b30"; lg.lineWidth = 1.5; lg.beginPath(); lg.moveTo(L / 2, L / 2 - 14); lg.lineTo(L / 2, L / 2 + 14); lg.moveTo(L / 2 - 14, L / 2); lg.lineTo(L / 2 + 14, L / 2); lg.stroke();
+        }
+        var dragging = false;
+        cv.addEventListener("pointerdown", function (ev) { if (done) return; dragging = true; try { cv.setPointerCapture(ev.pointerId); } catch (e) {} draw(); loupe(toImg(ev), ev); ev.preventDefault(); });
+        cv.addEventListener("pointermove", function (ev) { if (!dragging) return; loupe(toImg(ev), ev); });
+        function up(ev) {
+          if (!dragging) return; dragging = false; lp.hidden = true;
+          var p = toImg(ev); if (p[0] < 0 || p[1] < 0 || p[0] > cv.width || p[1] > cv.height) return;
+          pts[steps[cur].k] = p; inHole = false;
+          if (steps[cur].k === "e3" && !circ()) { delete pts.e3; $("#de-msg").textContent = "세 점이 한 줄이에요. 테두리의 다른 곳을 눌러주세요."; draw(); return; }
+          $("#de-msg").textContent = ""; next();
+        }
+        cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", function () { dragging = false; lp.hidden = true; });
+        function finish() {
+          done = true; var P = papFor(pr);
+          if (!pts.pin) { res = null; stepUI(); draw(); $("#de-res").innerHTML = '<p class="fn" style="color:var(--warn)">핀 없이는 지공 수치를 계산할 수 없어요. 핀이 다른 면에 있으면 그 면이 보이게 다시 찍거나, 프로샵에 핀 위치를 물어보세요.</p>'; return; }
+          res = DGEO.estimate({ img: { w: cv.width, h: cv.height }, edge: [pts.e1, pts.e2, pts.e3], f1: pts.f1, f2: pts.f2, th: pts.th, pin: pts.pin, mb: pts.mb, hand: pr.hand, papH: P.h, papV: P.v });
+          stepUI(); draw();
+          if (res.err) { $("#de-res").innerHTML = '<p class="fn" style="color:var(--bad)">' + res.err + "</p>"; return; }
+          var R = deRead(res, asym), odd = res.span < 3.6 || res.span > 7.2;
+          var vls = fracPlain(r8(res.pinPap)) + " × " + fracPlain(r8(res.buffer)) + " × " + (res.mbPap != null ? fracPlain(r8(res.mbPap)) : "–");
+          var da = res.drill != null ? Math.round(res.drill / 5) * 5 + "° × " + fracPlain(r8(res.pinPap)) + " × " + Math.round(res.val / 5) * 5 + "°" : null;
+          $("#de-res").innerHTML =
+            '<div class="de-out"><span class="de-badge">사진 추정 · 거리 ±½″ · 각도 ±10°</span>' +
+            '<p class="lstr">' + vls + "<small>VLS · 핀-PAP × 핀 버퍼 × MB-PAP</small></p>" +
+            (da ? '<p class="lstr" style="font-size:20px">' + da + "<small>듀얼 앵글 · 드릴 각 × 핀-PAP × VAL 각</small></p>" : "") +
+            '<p class="de-sum">' + R.sum + '<small>잘 맞는 곳: ' + R.lane + "</small></p>" +
+            "<ul class=\"de-lines\">" + R.lines.map(function (x) { return "<li>" + x + "</li>"; }).join("") + "</ul>" +
+            (odd ? '<p class="fn" style="color:var(--warn)">⚠ 손가락-엄지 거리가 ' + res.span.toFixed(1) + '″로 나와서 평소와 달라요. 사진이 비스듬하거나 테두리 점이 어긋났을 수 있어요.</p>' : "") +
+            (res.virtualThumb ? '<p class="fn">엄지 구멍이 없어서 손가락 아래 4¾″ 위치를 가상 엄지로 잡았어요.</p>' : "") +
+            '<p class="fn">PAP는 ' + (P.mine ? "내 설정값" : "평균값") + "으로 계산했어요. 실제 움직임은 회전수·스피드·레인에 따라 달라요.</p></div>" +
+            '<div class="acts"><button type="button" class="btn pri" id="de-sv">VLS로 이 볼에 저장</button>' + (da ? '<button type="button" class="btn" id="de-sd">듀얼 앵글로 저장</button>' : "") + '<button type="button" class="btn ghost" id="de-again">다른 사진</button></div>';
+          $("#de-sv").onclick = function () { b.layout = { fmt: "vls", pinPap: clamp(r8(res.pinPap), 0, 6.75), buffer: clamp(r8(res.buffer), 0, 6), mb: res.mbPap != null ? clamp(r8(res.mbPap), 0, 8) : (b.layout && b.layout.mb) || 4, est: true }; save(); closeSheet(); render(); };
+          if (da) $("#de-sd").onclick = function () { b.layout = { fmt: "da", drill: clamp(Math.round(res.drill / 5) * 5, 10, 90), pinPap: clamp(r8(res.pinPap), 0, 6.75), val: clamp(Math.round(res.val / 5) * 5, 10, 90), est: true }; save(); closeSheet(); render(); };
+          $("#de-again").onclick = function () { W.hidden = true; W.innerHTML = ""; $(".de-guide", body).hidden = false; $(".pt-acts", body).hidden = false; };
+        }
+        stepUI(); draw();
+      }
     });
   }
 
@@ -1042,8 +1290,8 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       $("#bw-style").appendChild(segmented(STYLES.map(function (s) { return [s[0], s[1]]; }), function () { return pr.style; }, function (v) { applyStyle(v); note(); ax.forEach(function (a) { a.refresh(); }); render(); }, "투구 스타일", "wrap"));
       note();
       function papx() { $("#bw-papx").innerHTML = fracPlain(pr.papH) + " × " + fracPlain(pr.papV) + " " + (pr.papV >= 0 ? "UP" : "DOWN") + "<small>내 PAP (가로 × 세로)</small>"; }
-      [stepper({ id: "bw-ph", label: "PAP 가로", min: 2, max: 7, step: 0.125, dec: 3, extra: frac, get: function () { return pr.papH; }, set: function (v) { pr.papH = v; }, onChange: function () { papx(); save(); } }),
-       stepper({ id: "bw-pv", label: "PAP 세로", sub: "+위 −아래", min: -2, max: 2, step: 0.125, dec: 3, extra: function (v) { return (v >= 0 ? "위 " : "아래 ") + frac(v); }, get: function () { return pr.papV; }, set: function (v) { pr.papV = v; }, onChange: function () { papx(); save(); } })
+      [stepper({ id: "bw-ph", label: "PAP 가로", min: 2, max: 7, step: 0.125, dec: 3, extra: frac, get: function () { return pr.papH; }, set: function (v) { pr.papCustom = true; pr.papH = v; }, onChange: function () { papx(); save(); } }),
+       stepper({ id: "bw-pv", label: "PAP 세로", sub: "+위 −아래", min: -2, max: 2, step: 0.125, dec: 3, extra: function (v) { return (v >= 0 ? "위 " : "아래 ") + frac(v); }, get: function () { return pr.papV; }, set: function (v) { pr.papCustom = true; pr.papV = v; }, onChange: function () { papx(); save(); } })
       ].forEach(function (s) { $("#bw-pap").appendChild(s); });
       papx();
       ax = [range({ id: "bw-tilt", label: "축 기울기 (tilt)", min: 0, max: 30, step: 1, get: function () { return pr.tilt; }, set: function (v) { pr.tilt = v; }, fmt: function (v) { return v + "<small>°</small>"; }, onChange: function () { save(); render(); } }),
@@ -1806,7 +2054,7 @@ button.tag{font:inherit;font-family:var(--font-num);cursor:pointer;-webkit-appea
       body.innerHTML = '<div class="field"><span class="flabel">글씨 크기</span><div id="set-fz"></div><p class="fn">코치 메모·볼 성향, 영상 분석, 기록 목록, 설정 같은 읽는 화면에 적용돼요.</p></div>' +
         '<ul class="adv set-prev"><li><b>미리보기</b> · 릴리스 때 머리가 슬라이드발 위에 잘 실려 중심이 안정적이에요.</li></ul>' +
         '<div class="field"><span class="flabel">투구 손 · 스타일</span><p class="fn">궤적 탭의 <b>⚙ 투구 정보</b>에서 바꿀 수 있어요.</p></div>' +
-        '<button type="button" class="btn" id="set-oss">오픈소스 라이선스</button>' +
+        '<div class="acts"><button type="button" class="btn" id="set-oss">오픈소스 라이선스</button><a class="btn" href="https://bhpark9875.github.io/crazy-bowlin/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a></div>' +
         '<p class="fn copy">Crazy Bowl-in © 2026 bh.park. All rights reserved.<br>이 앱의 코드·디자인·화면의 무단 복제·배포·재판매를 금지합니다.</p>';
       var seg = segmented(FZ, function () { return String(st.ui.fz || 1); }, function (v) { st.ui.fz = +v; save(); applyFz(); seg.refresh(); }, "글씨 크기", "fill");
       $("#set-fz").appendChild(seg);
